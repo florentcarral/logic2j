@@ -109,7 +109,7 @@ public class SqlRunner {
    * @return Full result set in memory :-(
    * @throws SQLException 
    */
-  private List<Object[]> handle(ResultSet theResultSet) throws SQLException {
+  protected List<Object[]> handle(ResultSet theResultSet) throws SQLException {
     List<Object[]> result = new ArrayList<Object[]>();
 
     ResultSetMetaData meta = theResultSet.getMetaData();
