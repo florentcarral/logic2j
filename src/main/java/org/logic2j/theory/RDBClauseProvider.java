@@ -72,7 +72,7 @@ public class RDBClauseProvider extends RDBBase implements ClauseProvider {
   protected List<Clause> queryForClauses(SqlBuilder3 builder, String predicateName) {
 
     List<Clause> clauses = new ArrayList<Clause>();
-    List<Object[]> rows;
+    Iterable<Object[]> rows;
     try {
       builder.generateSelect();
       rows = new SqlRunner(getDataSource()).query(builder.getSql(), builder.getParameters());
