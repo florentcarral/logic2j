@@ -35,7 +35,7 @@ public class SqlRunnerAdHoc extends SqlRunner {
 			 ResultSet rs =  itRes.next();
 			 result.add(toArray(rs, rs.getMetaData().getColumnCount()));
 		}*/
-		return new DynIterable<Object[], ResultSet>(this.objectBuilder(), this.asIterable(theResultSet));
+		return new DynIterable<Object[], ResultSet>(this.objectBuilder(), this.asIterable(theResultSet,stmt));
 	}
 //*
 	private DynBuilder<Object[], ResultSet> objectBuilder(){
@@ -53,7 +53,7 @@ public class SqlRunnerAdHoc extends SqlRunner {
 	}
 	//*/
 	
-	private Iterable<ResultSet> asIterable(final ResultSet rs) {
+	private Iterable<ResultSet> asIterable(final ResultSet rs,final PreparedStatement stm) {
 		return new Iterable<ResultSet>() {
 			@Override
 			public Iterator<ResultSet> iterator() {
@@ -64,6 +64,7 @@ public class SqlRunnerAdHoc extends SqlRunner {
 							if(!last){
 								if(rs.isLast()){
 									rs.close();
+									stm.close();
 									last = true;
 								}
 							}
