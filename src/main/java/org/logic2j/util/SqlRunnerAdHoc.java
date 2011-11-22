@@ -24,7 +24,7 @@ public class SqlRunnerAdHoc extends SqlRunner {
 	}
 
 	@Override
-	protected List<Object[]> handle(ResultSet theResultSet) throws SQLException {
+	protected Iterable<Object[]> handle(ResultSet theResultSet) throws SQLException {
 		// TODO Auto-generated method stub
 		
 		return super.handle(theResultSet);

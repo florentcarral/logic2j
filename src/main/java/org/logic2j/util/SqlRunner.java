@@ -55,13 +55,13 @@ public class SqlRunner {
    * @return The result (all data)
    * @throws SQLException 
    */
-  public List<Object[]> query(String theSelect, Object[] theParameters) throws SQLException {
+  public Iterable<Object[]> query(String theSelect, Object[] theParameters) throws SQLException {
     if (theParameters == null) {
       theParameters = EMPTY_PARAMS;
     }
     PreparedStatement stmt = null;
     ResultSet rs = null;
-    List<Object[]> result = null;
+    Iterable<Object[]> result = null;
     if (DEBUG_ENABLED) {
       logger.debug("SqlRunner SQL \"" + theSelect + '"');
       logger.debug(" parameters=" + Arrays.asList(theParameters));
@@ -109,7 +109,7 @@ public class SqlRunner {
    * @return Full result set in memory :-(
    * @throws SQLException 
    */
-  protected List<Object[]> handle(ResultSet theResultSet) throws SQLException {
+  protected Iterable<Object[]> handle(ResultSet theResultSet) throws SQLException {
     List<Object[]> result = new ArrayList<Object[]>();
 
     ResultSetMetaData meta = theResultSet.getMetaData();

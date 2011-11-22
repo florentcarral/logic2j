@@ -34,6 +34,7 @@ import org.logic2j.model.symbol.Term;
 import org.logic2j.util.SqlBuilder3;
 import org.logic2j.util.SqlRunner;
 import org.logic2j.util.SqlBuilder3.Table;
+import org.logic2j.util.SqlRunnerAdHoc;
 
 /**
  * List {@link Clause}s (facts, never rules) from relational database tables or views accessed 
@@ -75,7 +76,7 @@ public class RDBClauseProvider extends RDBBase implements ClauseProvider {
     Iterable<Object[]> rows;
     try {
       builder.generateSelect();
-      rows = new SqlRunner(getDataSource()).query(builder.getSql(), builder.getParameters());
+      rows = new SqlRunnerAdHoc(getDataSource()).query(builder.getSql(), builder.getParameters());
       for (Object[] row : rows) {
         Term[] args = new Term[row.length];
         for (int i = 0; i < row.length; i++) {

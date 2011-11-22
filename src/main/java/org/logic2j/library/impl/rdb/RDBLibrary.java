@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -266,23 +267,30 @@ public class RDBLibrary extends LibraryBase {
     // Execution
     final SqlRunner sqlRunner = new SqlRunner(ds);
     if (builder.getNbProjections() == 0) {
-      List<Object[]> countOnly = sqlRunner.query(effectiveSql, builder.getParameters());
-      if (countOnly.size() != 1) {
-        throw new IllegalStateException("Query for counting " + effectiveSql + "did not return a single result set row but "
-            + countOnly.size());
+      Iterable<Object[]> countOnly = sqlRunner.query(effectiveSql, builder.getParameters());
+      Iterator<Object[]> itObj = countOnly.iterator();
+      Object[] firstObject ;
+      if(itObj.hasNext()){
+    	  firstObject = itObj.next();
+    	  if(itObj.hasNext()){
+    		  throw new IllegalStateException("Query for counting " + effectiveSql + "did not return a single result set row but greater than 0");
+    	  }
+    	  if(firstObject.length != 1){
+    		  throw new IllegalStateException("Query for counting " + effectiveSql + "did not return a single column set row but "
+    		            + firstObject.length);
+    	  }
       }
-      if (countOnly.get(0).length != 1) {
-        throw new IllegalStateException("Query for counting " + effectiveSql + "did not return a single column set row but "
-            + countOnly.get(0).length);
+      else{
+    	  throw new IllegalStateException("Query for counting " + effectiveSql + "did not return any result.");
       }
-      final Number resultSet = (Number) countOnly.get(0)[0];
+      final Number resultSet = (Number) firstObject[0];
       int number = resultSet.intValue();
       while (number-- > 0) {
         // Generates solutions without binding variables, just the right number of them
         notifySolution(theGoalFrame, theListener);
       }
     } else {
-      final List<Object[]> resultSet = sqlRunner.query(effectiveSql, builder.getParameters());
+      final Iterable<Object[]> resultSet = sqlRunner.query(effectiveSql, builder.getParameters());
       // Vars referenced in projections
       Var projectedVars[] = new Var[projectVars.size()];
       Bindings originalBindings = null;
