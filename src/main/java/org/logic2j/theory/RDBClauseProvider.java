@@ -31,73 +31,95 @@ import org.logic2j.model.Clause;
 import org.logic2j.model.exception.InvalidTermException;
 import org.logic2j.model.symbol.Struct;
 import org.logic2j.model.symbol.Term;
+import org.logic2j.util.DynIterable;
 import org.logic2j.util.SqlBuilder3;
 import org.logic2j.util.SqlRunner;
 import org.logic2j.util.SqlBuilder3.Table;
 import org.logic2j.util.SqlRunnerAdHoc;
 
 /**
- * List {@link Clause}s (facts, never rules) from relational database tables or views accessed 
- * from the JDBC {@link DataSource} API.
- * When trying to solve the goal "zipcode_city(94101, City)" which yields City='SAN FRANCISCO', 
- * this class expects a database table or view such as "PRED_ZIPCODE_CITY(INTEGER ARG_0, VARCHAR ARG_1)".
+ * List {@link Clause}s (facts, never rules) from relational database tables or
+ * views accessed from the JDBC {@link DataSource} API. When trying to solve the
+ * goal "zipcode_city(94101, City)" which yields City='SAN FRANCISCO', this
+ * class expects a database table or view such as
+ * "PRED_ZIPCODE_CITY(INTEGER ARG_0, VARCHAR ARG_1)".
  */
 public class RDBClauseProvider extends RDBBase implements ClauseProvider {
 
-  /**
-   * The target database is supposed to implement tables, or (more realistically) views
-   * that start with the following name. The rest of the table or view name will be the
-   * predicate being listed.
-   */
-  private static final String PREDICATE_TABLE_OR_VIEW_HEADER = "pred_";
-  private static final String PREDICATE_COLUMN_HEADER = "arg_";
+	/**
+	 * The target database is supposed to implement tables, or (more
+	 * realistically) views that start with the following name. The rest of the
+	 * table or view name will be the predicate being listed.
+	 */
+	private static final String PREDICATE_TABLE_OR_VIEW_HEADER = "pred_";
+	private static final String PREDICATE_COLUMN_HEADER = "arg_";
 
-  public RDBClauseProvider(PrologImplementor theProlog, DataSource theDataSource) {
-    super(theProlog, theDataSource);
-  }
+	public RDBClauseProvider(PrologImplementor theProlog,
+			DataSource theDataSource) {
+		super(theProlog, theDataSource);
+	}
 
-  @Override
-  public Iterable<Clause> listMatchingClauses(Struct theGoal) {
-    String predicateName = theGoal.getName();
-    SqlBuilder3 builder = new SqlBuilder3();
-    builder.setInstruction(SqlBuilder3.SELECT);
-    Table table = builder.table(tableName(theGoal));
-    for (int i = 0; i < theGoal.getArity(); i++) {
-      final String columnName = PREDICATE_COLUMN_HEADER + i;
-      builder.addProjection(builder.column(table, columnName));
-    }
-    List<Clause> clauses = queryForClauses(builder, predicateName);
-    return clauses;
-  }
+	@Override
+	public Iterable<Clause> listMatchingClauses(Struct theGoal) {
+		String predicateName = theGoal.getName();
+		SqlBuilder3 builder = new SqlBuilder3();
+		builder.setInstruction(SqlBuilder3.SELECT);
+		Table table = builder.table(tableName(theGoal));
+		for (int i = 0; i < theGoal.getArity(); i++) {
+			final String columnName = PREDICATE_COLUMN_HEADER + i;
+			builder.addProjection(builder.column(table, columnName));
+		}
+		Iterable<Clause> clauses = queryForClauses(builder, predicateName);
+		return clauses;
+	}
 
-  protected List<Clause> queryForClauses(SqlBuilder3 builder, String predicateName) {
+	protected Iterable<Clause> queryForClauses(SqlBuilder3 builder,
+			final String predicateName) {
+		/*
+		 * List<Clause> clauses = new ArrayList<Clause>(); Iterable<Object[]>
+		 * rows; try { rows = new
+		 * SqlRunnerAdHoc(getDataSource()).query(builder.getSelect(),
+		 * builder.getParameters()); for (Object[] row : rows) { Term[] args =
+		 * new Term[row.length]; for (int i = 0; i < row.length; i++) { Object
+		 * object = row[i]; args[i] = getTermFactory().create(object,
+		 * FactoryMode.ANY_TERM); } final Clause cl = new Clause(getProlog(),
+		 * new Struct(predicateName, args)); clauses.add(cl); } } catch
+		 * (SQLException e) { throw new
+		 * InvalidTermException("Exception not handled: " + e, e); }
+		 */
+		Iterable<Object[]> rows;
+		try {
+			rows = new SqlRunnerAdHoc(getDataSource()).query(
+					builder.getSql(), builder.getParameters());
+			return new DynIterable<Clause, Object[]>(
+					new DynIterable.DynBuilder<Clause, Object[]>() {
+						@Override
+						public Clause build(Object[] input) {
+							return clauseBuilder(input, predicateName);
+						}
+					}, rows);
+		} catch (SQLException e) {
+			throw new InvalidTermException("Exception not handled: " + e, e);
+		}
+	}
 
-    List<Clause> clauses = new ArrayList<Clause>();
-    Iterable<Object[]> rows;
-    try {
-      builder.generateSelect();
-      rows = new SqlRunnerAdHoc(getDataSource()).query(builder.getSql(), builder.getParameters());
-      for (Object[] row : rows) {
-        Term[] args = new Term[row.length];
-        for (int i = 0; i < row.length; i++) {
-          Object object = row[i];
-          args[i] = getTermFactory().create(object, FactoryMode.ANY_TERM);
-        }
-        final Clause cl = new Clause(getProlog(), new Struct(predicateName, args));
-        clauses.add(cl);
-      }
-    } catch (SQLException e) {
-      throw new InvalidTermException("Exception not handled: " + e, e);
-    }
-    return clauses;
-  }
+	private Clause clauseBuilder(Object[] row, String predicateName) {
+		Term[] args = new Term[row.length];
+		for (int i = 0; i < row.length; i++) {
+			Object object = row[i];
+			args[i] = getTermFactory().create(object, FactoryMode.ANY_TERM);
+		}
+		final Clause cl = new Clause(getProlog(), new Struct(predicateName,
+				args));
+		return cl;
+	}
 
-  //---------------------------------------------------------------------------
-  // Methods
-  //---------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
+	// Methods
+	// ---------------------------------------------------------------------------
 
-  private String tableName(Struct theGoal) {
-    return PREDICATE_TABLE_OR_VIEW_HEADER + theGoal.getName();
-  }
+	private String tableName(Struct theGoal) {
+		return PREDICATE_TABLE_OR_VIEW_HEADER + theGoal.getName();
+	}
 
 }
