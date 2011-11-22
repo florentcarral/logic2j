@@ -81,7 +81,7 @@ public class SqlRunner {
       }
       this.rethrow(e, theSelect, theParameters);
     } finally {
-      try {
+      /*try {
         if (rs != null) {
           rs.close();
         }
@@ -94,7 +94,7 @@ public class SqlRunner {
         }
       } catch (SQLException ignored) {
         // Quiet
-      }
+      }*/
       // Should we close the connection here??? (return it to the pool in case of a pooled connection?)
     }
     return result;
