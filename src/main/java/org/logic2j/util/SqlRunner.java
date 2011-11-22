@@ -39,7 +39,7 @@ public class SqlRunner {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SqlRunner.class);
   private static final boolean DEBUG_ENABLED = logger.isDebugEnabled();
   private static final Object[] EMPTY_PARAMS = new Object[0];
-
+  protected PreparedStatement stmt;
   private final DataSource dataSource;
 
   /**
@@ -59,7 +59,6 @@ public class SqlRunner {
     if (theParameters == null) {
       theParameters = EMPTY_PARAMS;
     }
-    PreparedStatement stmt = null;
     ResultSet rs = null;
     Iterable<Object[]> result = null;
     if (DEBUG_ENABLED) {
