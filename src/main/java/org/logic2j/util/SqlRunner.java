@@ -36,11 +36,11 @@ import javax.sql.DataSource;
  * @version $Id$
  */
 public class SqlRunner {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SqlRunner.class);
-  private static final boolean DEBUG_ENABLED = logger.isDebugEnabled();
-  private static final Object[] EMPTY_PARAMS = new Object[0];
+  protected static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SqlRunner.class);
+  protected static final boolean DEBUG_ENABLED = logger.isDebugEnabled();
+  protected static final Object[] EMPTY_PARAMS = new Object[0];
   protected PreparedStatement stmt;
-  private final DataSource dataSource;
+  protected final DataSource dataSource;
 
   /**
    * @param theDataSource
