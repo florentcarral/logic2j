@@ -129,7 +129,7 @@ public class SqlRunnerAdHoc extends SqlRunner {
 			throws SQLException {
 		conn.setAutoCommit(true);
 		PreparedStatement stm = conn.prepareStatement(sql,
-				java.sql.ResultSet.TYPE_SCROLL_SENSITIVE,
+				java.sql.ResultSet.TYPE_FORWARD_ONLY,
 				java.sql.ResultSet.CONCUR_READ_ONLY);
 		stm.setFetchSize(SqlRunnerAdHoc.FETCH_SIZE);
 		return stm;

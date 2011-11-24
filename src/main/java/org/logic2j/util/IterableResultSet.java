@@ -7,101 +7,97 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * @author vincent
- *
+ * 
  */
 public class IterableResultSet implements Iterable<Object[]> {
-	private PreparedStatement stmt;	
-	private int nbIterator = 0;
-	
+	private PreparedStatement stmt;
+
 	public IterableResultSet(PreparedStatement stmt) {
 		super();
 		this.stmt = stmt;
 	}
-	
+
 	@Override
 	public Iterator<Object[]> iterator() {
-		nbIterator++;
-		return new ResultSetIterator();
+		try {
+			return new ResultSetIterator();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
-	
-	
 
 	@Override
 	protected void finalize() throws Throwable {
 		this.stmt.close();
 	}
 
+	private class ResultSetIterator implements Iterator<Object[]> {
+		private ResultSet rs;
+		private Object[] current;
+		private boolean hasNext = true;
 
-
-	private class ResultSetIterator implements Iterator<Object[]>{
-		private Object[][] buffer = new Object[SqlRunnerAdHoc.FETCH_SIZE][];
-		private int currentIndex = 0;
-		private int offset = 0;
-		private int lastObject = 0;
-		boolean isEnd = false;
-		
-		private void updateBuffer() throws SQLException{
-			ResultSet rs = stmt.executeQuery();
-			rs.absolute(offset+currentIndex+1);
-			offset+=currentIndex;
-			currentIndex = 0;
-			int bufferPost = 0;
-			while(!rs.isAfterLast()&&bufferPost<SqlRunnerAdHoc.FETCH_SIZE){
-				this.buffer[bufferPost] = this.rowBuilder(rs, rs.getMetaData().getColumnCount());
-				rs.next();
-				bufferPost++;
-			}
-			if(rs.isAfterLast()){
-				this.isEnd = true;
-			}
-			this.lastObject = bufferPost-1;
-			rs.close();
-		}
-
-		private Object[] rowBuilder(ResultSet theResultSet, int theCols) throws SQLException{
-			final Object[] result = new Object[theCols];
-		    for (int i = 0; i < theCols; i++) {
-		      result[i] = theResultSet.getObject(i + 1);
-		    }
-		    return result;
-		}
-		
-		public ResultSetIterator() {
+		public ResultSetIterator() throws SQLException {
 			super();
-			try {
-				this.updateBuffer();
-			} catch (SQLException e) {
-				e.printStackTrace();
+			this.rs = stmt.executeQuery();
+			boolean notEmpty = rs.next();
+			if(notEmpty){
+				current = this.buildRow(rs, rs.getMetaData().getColumnCount());
 			}
+			else{
+				this.hasNext = false;
+			}
+		}
+
+		/**
+		 * @param theResultSet
+		 * @param theCols
+		 * @return One row as array
+		 */
+		protected Object[] buildRow(ResultSet theResultSet, int theCols)
+				throws SQLException {
+			final Object[] result = new Object[theCols];
+			for (int i = 0; i < theCols; i++) {
+				result[i] = theResultSet.getObject(i + 1);
+			}
+			return result;
 		}
 
 		@Override
 		public boolean hasNext() {
-			return (this.currentIndex <= this.lastObject)||(!this.isEnd);
+			return this.hasNext;
 		}
 
 		@Override
 		public Object[] next() {
-			Object[] data = this.buffer[this.currentIndex];
-			this.currentIndex++;
-			if(this.currentIndex > this.lastObject){
-				try {
-					this.updateBuffer();
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			try {
+				Object[] obj = this.current;
+				this.hasNext = this.rs.next();
+				if(this.hasNext)
+					this.current = this.buildRow(this.rs, this.rs.getMetaData().getColumnCount());
+				else
+					rs.close();
+				return obj;
+			} catch (SQLException e) {
+				throw new NoSuchElementException();
 			}
-			return data;
 		}
 
 		@Override
 		public void remove() {
 			throw new UnsupportedOperationException();
 		}
-		
+
+		@Override
+		protected void finalize() throws Throwable {
+			rs.close();
+			super.finalize();
+		}
+
 	}
 }
