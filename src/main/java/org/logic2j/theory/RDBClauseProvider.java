@@ -119,6 +119,7 @@ public class RDBClauseProvider extends RDBBase implements ClauseProvider {
 	// Methods
 	// ---------------------------------------------------------------------------
 
+
 	private String tableName(Struct theGoal) {
 		return PREDICATE_TABLE_OR_VIEW_HEADER + theGoal.getName();
 	}
