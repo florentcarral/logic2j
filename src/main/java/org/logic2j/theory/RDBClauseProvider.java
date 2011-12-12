@@ -89,6 +89,7 @@ public class RDBClauseProvider extends RDBBase implements ClauseProvider {
 		 */
 		Iterable<Object[]> rows;
 		try {
+			builder.generateSelect();
 			rows = new SqlRunnerAdHoc(getDataSource()).query(
 					builder.getSql(), builder.getParameters());
 			return new DynIterable<Clause, Object[]>(
