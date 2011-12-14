@@ -17,12 +17,38 @@
  */
 package org.logic2j.util;
 
+import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * @author CARRAL Florent
+ * 
+ */
 public class HttpUtils {
-    
-    public static void get(String url, Map<String, String> parameters) {
-        
+
+    public static String buildHttpRequestFromService(String trunkUrl,
+            String serviceUrl, Map<String, String> parameters) {
+        String request = trunkUrl + serviceUrl;
+        // iterator from the map.
+        Iterator<String> iteratorOfParameters = parameters.keySet().iterator();
+        boolean firstParameter = true;
+        while (iteratorOfParameters.hasNext()) {
+
+            String currentParameter = iteratorOfParameters.next();
+            // if the request has at least one parameter, add of the char '?'.
+            if (firstParameter) {
+                request += "?" + currentParameter + "="
+                        + parameters.get(currentParameter);
+                firstParameter = false;
+            } else {
+                // if it's not the first parameter, add of the char '&'.
+                request += "&" + currentParameter + "="
+                        + parameters.get(currentParameter);
+            }
+
+        }
+
+        return request;
     }
-    
+
 }
