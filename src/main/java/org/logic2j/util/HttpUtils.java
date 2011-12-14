@@ -26,9 +26,7 @@ import java.util.Map;
  */
 public class HttpUtils {
 
-    public static String buildHttpRequestFromService(String trunkUrl,
-            String serviceUrl, Map<String, String> parameters) {
-        String request = trunkUrl + serviceUrl;
+    public static String buildHttpRequestFromService(String url, Map<String, String> parameters) {
         // iterator from the map.
         Iterator<String> iteratorOfParameters = parameters.keySet().iterator();
         boolean firstParameter = true;
@@ -37,18 +35,18 @@ public class HttpUtils {
             String currentParameter = iteratorOfParameters.next();
             // if the request has at least one parameter, add of the char '?'.
             if (firstParameter) {
-                request += "?" + currentParameter + "="
+                url += "?" + currentParameter + "="
                         + parameters.get(currentParameter);
                 firstParameter = false;
             } else {
                 // if it's not the first parameter, add of the char '&'.
-                request += "&" + currentParameter + "="
+                url += "&" + currentParameter + "="
                         + parameters.get(currentParameter);
             }
 
         }
 
-        return request;
+        return url;
     }
 
 }

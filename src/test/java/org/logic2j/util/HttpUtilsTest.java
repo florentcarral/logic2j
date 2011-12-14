@@ -37,16 +37,16 @@ public class HttpUtilsTest {
     public void testBuildHttpRequestFromService() {
         HashMap<String, String> parameters = new HashMap<String, String>();
         // url without parameter.
-        assertTrue(HttpUtils.buildHttpRequestFromService("www.test.com", "/my/Service", parameters).compareTo("www.test.com/my/Service") == 0);
+        assertTrue(HttpUtils.buildHttpRequestFromService("www.test.com/my/Service", parameters).compareTo("www.test.com/my/Service") == 0);
         
         // url with one parameter.
         parameters.put("A", "6538654275");
-        assertTrue(HttpUtils.buildHttpRequestFromService("www.test.com", "/my/Service", parameters).compareTo("www.test.com/my/Service?A=6538654275") == 0);
+        assertTrue(HttpUtils.buildHttpRequestFromService("www.test.com/my/Service", parameters).compareTo("www.test.com/my/Service?A=6538654275") == 0);
              
         // url with several parameters.
         parameters.put("B", "2");
         parameters.put("C", "3");
-        assertTrue(HttpUtils.buildHttpRequestFromService("www.test.com", "/my/Service", parameters).compareTo("www.test.com/my/Service?A=6538654275&B=2&C=3") == 0);
+        assertTrue(HttpUtils.buildHttpRequestFromService("www.test.com/my/Service", parameters).compareTo("www.test.com/my/Service?A=6538654275&B=2&C=3") == 0);
 
     }
 
