@@ -1,7 +1,9 @@
 package org.logic2j.library.impl.webservice;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,8 +12,10 @@ import org.logic2j.io.format.FormatUtils;
 import org.logic2j.library.impl.LibraryBase;
 import org.logic2j.library.impl.io.IOLibrary;
 import org.logic2j.library.mgmt.Primitive;
+import org.logic2j.model.TermVisitor;
 import org.logic2j.model.symbol.Term;
 import org.logic2j.model.symbol.Var;
+import org.logic2j.model.var.Binding;
 import org.logic2j.model.var.Bindings;
 import org.logic2j.solve.GoalFrame;
 import org.logic2j.solve.ioc.SolutionListener;
