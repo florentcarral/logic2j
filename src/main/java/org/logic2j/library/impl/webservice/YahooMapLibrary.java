@@ -1,7 +1,9 @@
 package org.logic2j.library.impl.webservice;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,7 +12,10 @@ import org.logic2j.io.format.FormatUtils;
 import org.logic2j.library.impl.LibraryBase;
 import org.logic2j.library.impl.io.IOLibrary;
 import org.logic2j.library.mgmt.Primitive;
+import org.logic2j.model.TermVisitor;
 import org.logic2j.model.symbol.Term;
+import org.logic2j.model.symbol.Var;
+import org.logic2j.model.var.Binding;
 import org.logic2j.model.var.Bindings;
 import org.logic2j.solve.GoalFrame;
 import org.logic2j.solve.ioc.SolutionListener;
@@ -40,70 +45,64 @@ public class YahooMapLibrary extends LibraryBase {
     private static final Map<Integer, List<String>> featuresParameters = new HashMap<Integer, List<String>>();
     private static final List<String> addressParameters = new ArrayList<String>();
     private static final List<String> latitudeAndLongitudeParameters = new ArrayList<String>();
-    static {
-        addressParameters.add("address");
-        addressParameters.add("flags");
+    static{
+        //YAHOOMAP_ADDRESS
+        addressParameters.add("q");
+        addressParameters.add("gflags");
+        addressParameters.add("appid");
         featuresParameters.put(YAHOOMAP_ADDRESS, addressParameters);
-
+        //YAHOOMAP_LATITUDE_AND_LONGITUDE
         latitudeAndLongitudeParameters.add("address");
         latitudeAndLongitudeParameters.add("flags");
-        featuresParameters.put(YAHOOMAP_LATITUDE_AND_LONGITUDE,
-                addressParameters);
+        latitudeAndLongitudeParameters.add("appid");
+        featuresParameters.put(YAHOOMAP_LATITUDE_AND_LONGITUDE, addressParameters);
     }
 
+    
     public YahooMapLibrary(PrologImplementor theProlog) {
         super(theProlog);
     }
-
+    
+    
     @Primitive
-    public void yahoomap_address(SolutionListener theListener,
-            GoalFrame theGoalFrame, Bindings theBindings, Term address,
-            Term latitude, Term longitude, Term apiKey) {
+    public void yahoomap_address(SolutionListener theListener, GoalFrame theGoalFrame, Bindings theBindings, Term address, Term latitude, Term longitude, Term apiKey) {
 
-        final Bindings longitudeBindings = theBindings.focus(longitude,
-                Term.class);
+        final Bindings longitudeBindings = theBindings.focus(longitude,Term.class);
         final Term longitudeValue = longitudeBindings.getReferrer();
-        String formatLongitude = getProlog().getFormatter().format(
-                longitudeValue);
+        String formatLongitude = getProlog().getFormatter().format(longitudeValue);
         formatLongitude = FormatUtils.removeApices(formatLongitude);
 
-        final Bindings latitudeBindings = theBindings.focus(latitude,
-                Term.class);
+        final Bindings latitudeBindings = theBindings.focus(latitude,Term.class);
         final Term latitudeValue = latitudeBindings.getReferrer();
-        String formatLatitude = getProlog().getFormatter()
-                .format(latitudeValue);
+        String formatLatitude = getProlog().getFormatter().format(latitudeValue);
         formatLatitude = FormatUtils.removeApices(formatLatitude);
 
         final Bindings apiKeyBindings = theBindings.focus(apiKey, Term.class);
         final Term apiKeyValue = apiKeyBindings.getReferrer();
         String formatApiKey = getProlog().getFormatter().format(apiKeyValue);
         formatApiKey = FormatUtils.removeApices(formatApiKey);
-
-        Map<String, String> parameters = constructAddressRequestParameters(
-                formatLatitude, formatLongitude, formatApiKey);
-
-        // Object[] values =
-        // addressFinder(HttpUtils.buildHttpRequestFromService(serviceTrunkUrl+featureSuffixUrlMap.get(YAHOOMAP_ADDRESS),
-        // parameters));
-
-        // unifyAndNotify(address, values, theBindings, theGoalFrame,
-        // theListener);
-
-        logger.info("LongitudeValue => " + formatLongitude);
-        logger.info("LatitudeValue => " + formatLatitude);
-
-        notifySolution(theGoalFrame, theListener);
+        
+        Map<String,String> parameters = constructAddressRequestParameters(formatLatitude, formatLongitude, formatApiKey);        
+        List<String> values = coordonatesToAddress(HttpUtils.buildHttpRequestFromService(serviceTrunkUrl+featureSuffixUrlMap.get(YAHOOMAP_ADDRESS), parameters));
+        
+        if (values.size()!=0){
+            if (address instanceof Var){
+                Var[] addressVars = {(Var)address};
+                unifyAndNotify(addressVars, values.toArray(), theBindings, theGoalFrame, theListener);
+            }
+        }
     }
 
-    public Map<String, String> constructAddressRequestParameters(
-            String latitude, String longitude, String apiKey) {
-        Map<String, String> requestParameters = new HashMap<String, String>();
-
-        requestParameters.put(featuresParameters.get(YAHOOMAP_ADDRESS).get(0),
-                latitude + " " + longitude);
-
-        return null;
+    
+    
+    public Map<String,String> constructAddressRequestParameters(String latitude, String longitude, String apiKey){
+        Map<String,String> requestParameters = new HashMap<String, String>();
+        requestParameters.put(featuresParameters.get(YAHOOMAP_ADDRESS).get(0), latitude+",+"+longitude);
+        requestParameters.put(featuresParameters.get(YAHOOMAP_ADDRESS).get(1), "R");
+        requestParameters.put(featuresParameters.get(YAHOOMAP_ADDRESS).get(2), apiKey);
+        return requestParameters;
     }
+    
 
     public static List<String[]> addressToCoordonate(String fullUrl){
         List<String[]> result = new ArrayList<String[]>();
@@ -137,8 +136,7 @@ public class YahooMapLibrary extends LibraryBase {
         // for each funded address.
         for (int i = 0; i < resultsFromService.getLength(); i++) {
             if (resultsFromService.item(i).getNodeName().equals("Result")) {
-                NodeList currentResult = resultsFromService.item(i)
-                        .getChildNodes();
+                NodeList currentResult = resultsFromService.item(i).getChildNodes();
                 // prepare of the string variable of the current address
                 String house = "";
                 String street = "";
@@ -162,10 +160,22 @@ public class YahooMapLibrary extends LibraryBase {
                             country = currentResult.item(j).getTextContent();
                         }
                 }
-                result.add(house +" "+ street +" "+ postal +" "+ city +" "+ country );
+                String currentAddress = house;
+                //That means that it is a non empty String which doesn't finish with a blank character logically.
+                if (currentAddress.length()>0) currentAddress+=" ";
+                currentAddress += street;
+                if (currentAddress.length()>0) currentAddress+=" ";
+                currentAddress += postal;
+                if (currentAddress.length()>0) currentAddress+=" ";
+                currentAddress += city;
+                if (currentAddress.length()>0) currentAddress+=" ";
+                currentAddress += country;
+                
+                if (currentAddress.length()>0){
+                    result.add(currentAddress);
+                }
             }
         }
-
         return result;
     }
 }
