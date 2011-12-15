@@ -105,12 +105,31 @@ public class YahooMapLibrary extends LibraryBase {
         return null;
     }
 
-    /*public static List<String[]> addressToCoordonate(String fullUrl){
+    public static List<String[]> addressToCoordonate(String fullUrl){
         List<String[]> result = new ArrayList<String[]>();
         Document doc = HttpUtils.responseToDocument(fullUrl);
         NodeList resultsFromService = doc.getFirstChild().getChildNodes();
-        
-    }*/
+        // for each funded coordonate.
+        for (int i = 0; i < resultsFromService.getLength(); i++) {
+            if (resultsFromService.item(i).getNodeName().equals("Result")) {
+                NodeList currentResult = resultsFromService.item(i)
+                        .getChildNodes();
+                String latitude = "";
+                String longitude = "";
+                for (int j = 0; j < currentResult.getLength(); j++) {
+                    if (currentResult.item(j).getNodeName().equals("latitude")) {
+                        latitude = currentResult.item(j).getTextContent();
+                    }
+                    if (currentResult.item(j).getNodeName().equals("longitude")) {
+                        longitude = currentResult.item(j).getTextContent();
+                    }
+                }
+                result.add( new String[]{latitude,longitude});
+            }
+        }
+        return result;
+    }
+    
     public static List<String> coordonatesToAddress(String fullUrl) {
         List<String> result = new ArrayList<String>();
         Document doc = HttpUtils.responseToDocument(fullUrl);
