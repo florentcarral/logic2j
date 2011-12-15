@@ -62,9 +62,7 @@ public class HttpUtils {
                 url += "&" + currentParameter + "="
                         + parameters.get(currentParameter);
             }
-
         }
-
         return url;
     }
 

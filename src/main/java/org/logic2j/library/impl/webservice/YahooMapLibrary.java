@@ -1,9 +1,7 @@
 package org.logic2j.library.impl.webservice;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,10 +10,8 @@ import org.logic2j.io.format.FormatUtils;
 import org.logic2j.library.impl.LibraryBase;
 import org.logic2j.library.impl.io.IOLibrary;
 import org.logic2j.library.mgmt.Primitive;
-import org.logic2j.model.TermVisitor;
 import org.logic2j.model.symbol.Term;
 import org.logic2j.model.symbol.Var;
-import org.logic2j.model.var.Binding;
 import org.logic2j.model.var.Bindings;
 import org.logic2j.solve.GoalFrame;
 import org.logic2j.solve.ioc.SolutionListener;
@@ -27,35 +23,39 @@ public class YahooMapLibrary extends LibraryBase {
 
     private static final String serviceTrunkUrl = "http://where.yahooapis.com/geocode";
 
-    static final org.slf4j.Logger logger = org.slf4j.LoggerFactory
-            .getLogger(IOLibrary.class);
+    static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(IOLibrary.class);
 
+    public final static int COORDINATE_RESULT_SIZE = 2;
+    public final static int COORDINATE_LATITUDE = 0;
+    public final static int COORDINATE_LONGITUDE = 1;
     public final static int YAHOOMAP_ADDRESS = 0;
-    public final static int YAHOOMAP_LATITUDE_AND_LONGITUDE = 1;
+    public final static int YAHOOMAP_COORDINATES = 1;
 
     // Definition of the arrayList with the suffix parts of the urls
     // corresponding to the services to implement
     private static final Map<Integer, String> featureSuffixUrlMap = new HashMap<Integer, String>();
     static {
         featureSuffixUrlMap.put(YAHOOMAP_ADDRESS, "");
-        featureSuffixUrlMap.put(YAHOOMAP_LATITUDE_AND_LONGITUDE, "");
+        featureSuffixUrlMap.put(YAHOOMAP_COORDINATES, "");
     }
 
     // Definition of the parameters needed for all the features instantiated.
     private static final Map<Integer, List<String>> featuresParameters = new HashMap<Integer, List<String>>();
     private static final List<String> addressParameters = new ArrayList<String>();
-    private static final List<String> latitudeAndLongitudeParameters = new ArrayList<String>();
+    private static final List<String> coordinatesParameters = new ArrayList<String>();
     static{
         //YAHOOMAP_ADDRESS
+        //to specify that we are giving an address information
         addressParameters.add("q");
         addressParameters.add("gflags");
         addressParameters.add("appid");
         featuresParameters.put(YAHOOMAP_ADDRESS, addressParameters);
         //YAHOOMAP_LATITUDE_AND_LONGITUDE
-        latitudeAndLongitudeParameters.add("address");
-        latitudeAndLongitudeParameters.add("flags");
-        latitudeAndLongitudeParameters.add("appid");
-        featuresParameters.put(YAHOOMAP_LATITUDE_AND_LONGITUDE, addressParameters);
+        //to specify that we are giving an address information
+        coordinatesParameters.add("q");
+        coordinatesParameters.add("flags");
+        coordinatesParameters.add("appid");
+        featuresParameters.put(YAHOOMAP_COORDINATES, coordinatesParameters);
     }
 
     
@@ -83,17 +83,66 @@ public class YahooMapLibrary extends LibraryBase {
         formatApiKey = FormatUtils.removeApices(formatApiKey);
         
         Map<String,String> parameters = constructAddressRequestParameters(formatLatitude, formatLongitude, formatApiKey);        
-        List<String> values = coordonatesToAddress(HttpUtils.buildHttpRequestFromService(serviceTrunkUrl+featureSuffixUrlMap.get(YAHOOMAP_ADDRESS), parameters));
+        List<String> values = coordinatesToAddress(HttpUtils.buildHttpRequestFromService(serviceTrunkUrl+featureSuffixUrlMap.get(YAHOOMAP_ADDRESS), parameters));
         
         if (values.size()!=0){
             if (address instanceof Var){
-                Var[] addressVars = {(Var)address};
-                unifyAndNotify(addressVars, values.toArray(), theBindings, theGoalFrame, theListener);
+                for (int i=0; i<values.size(); i++){
+                    Var[] addressVars = {(Var)address};
+                    Object[] valueTable = {values.get(i)};
+                    unifyAndNotify(addressVars, valueTable, theBindings, theGoalFrame, theListener);
+                }
+            }
+        }
+    }
+    
+    
+    
+    @Primitive
+    public void yahoomap_coordinates(SolutionListener theListener, GoalFrame theGoalFrame, Bindings theBindings, Term latitude, Term longitude, Term address, Term apiKey) {
+
+        final Bindings latitudeBindings = theBindings.focus(latitude,Term.class);
+        final Term latitudeValue = latitudeBindings.getReferrer();
+        final Bindings longitudeBindings = theBindings.focus(longitude, Term.class);
+        final Term longitudeValue = longitudeBindings.getReferrer();
+        
+        
+        final Bindings addressBindings = theBindings.focus(address,Term.class);
+        final Term addressValue = addressBindings.getReferrer();
+        String formatAddress = getProlog().getFormatter().format(addressValue);
+        formatAddress = FormatUtils.removeApices(formatAddress);
+
+        final Bindings apiKeyBindings = theBindings.focus(apiKey, Term.class);
+        final Term apiKeyValue = apiKeyBindings.getReferrer();
+        String formatApiKey = getProlog().getFormatter().format(apiKeyValue);
+        formatApiKey = FormatUtils.removeApices(formatApiKey);
+        
+        Map<String,String> parameters = constructCoordinatesRequestParameters(formatAddress, formatApiKey);        
+        List<String[]> values = addressToCoordinate(HttpUtils.buildHttpRequestFromService(serviceTrunkUrl+featureSuffixUrlMap.get(YAHOOMAP_ADDRESS), parameters));
+        
+        if (values.size()!=0){
+            for (int i=0; i<values.size(); i++){
+                List<Var> vars = new ArrayList<Var>();
+                List<Object> currentValue = new ArrayList<Object>();
+                if (latitudeValue instanceof Var){
+                    vars.add((Var)latitudeValue);
+                    currentValue.add(values.get(i)[COORDINATE_LATITUDE]);
+                }
+                if (longitudeValue instanceof Var){
+                    vars.add((Var)longitudeValue);
+                    currentValue.add(values.get(i)[COORDINATE_LONGITUDE]);
+                }
+                
+                if (vars.size()>0){
+                    Var[] varTable = new Var[vars.size()];
+                    for (int j=0; j<vars.size(); j++)
+                        varTable[j] = vars.get(j);
+                    unifyAndNotify(varTable, currentValue.toArray(), theBindings, theGoalFrame, theListener);
+                }
             }
         }
     }
 
-    
     
     public Map<String,String> constructAddressRequestParameters(String latitude, String longitude, String apiKey){
         Map<String,String> requestParameters = new HashMap<String, String>();
@@ -103,12 +152,21 @@ public class YahooMapLibrary extends LibraryBase {
         return requestParameters;
     }
     
+    
+    public Map<String, String> constructCoordinatesRequestParameters(String formatAddress, String formatApiKey){
+        Map<String,String> requestParameters = new HashMap<String, String>();
+        requestParameters.put(featuresParameters.get(YAHOOMAP_COORDINATES).get(0), formatAddress);
+        requestParameters.put(featuresParameters.get(YAHOOMAP_COORDINATES).get(1), "C");
+        requestParameters.put(featuresParameters.get(YAHOOMAP_COORDINATES).get(2), formatApiKey);
+        return requestParameters;
+    }
 
-    public static List<String[]> addressToCoordonate(String fullUrl){
+    
+    public static List<String[]> addressToCoordinate(String fullUrl){
         List<String[]> result = new ArrayList<String[]>();
         Document doc = HttpUtils.responseToDocument(fullUrl);
         NodeList resultsFromService = doc.getFirstChild().getChildNodes();
-        // for each funded coordonate.
+        // for each funded coordinate.
         for (int i = 0; i < resultsFromService.getLength(); i++) {
             if (resultsFromService.item(i).getNodeName().equals("Result")) {
                 NodeList currentResult = resultsFromService.item(i)
@@ -123,13 +181,17 @@ public class YahooMapLibrary extends LibraryBase {
                         longitude = currentResult.item(j).getTextContent();
                     }
                 }
-                result.add( new String[]{latitude,longitude});
+                String[] currentResultTable = new String[COORDINATE_RESULT_SIZE];
+                currentResultTable[COORDINATE_LATITUDE] = latitude;
+                currentResultTable[COORDINATE_LONGITUDE] = longitude;
+                result.add(currentResultTable);
             }
         }
         return result;
     }
     
-    public static List<String> coordonatesToAddress(String fullUrl) {
+    
+    public static List<String> coordinatesToAddress(String fullUrl) {
         List<String> result = new ArrayList<String>();
         Document doc = HttpUtils.responseToDocument(fullUrl);
         NodeList resultsFromService = doc.getFirstChild().getChildNodes();

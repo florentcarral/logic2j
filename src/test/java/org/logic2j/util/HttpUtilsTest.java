@@ -64,11 +64,11 @@ public class HttpUtilsTest {
         // sample test 
         String fullUrl = "http://where.yahooapis.com/geocode?q=La+Voix+Creuse+1,+1202+Geneve,+Suisse&appid=dj0yJmk9QkhEQlJQOXlLODhtJmQ9WVdrOVNsTXpXREo1TlRRbWNHbzlNekkyTlRJek16WXkmcz1jb25zdW1lcnNlY3JldCZ4PTJj";
         Document dct = HttpUtils.responseToDocument(fullUrl);
-        System.out.println(YahooMapLibrary.addressToCoordonate(fullUrl).get(0)[0]);
+        System.out.println(YahooMapLibrary.addressToCoordinate(fullUrl).get(0)[0]);
         assertTrue(dct.getFirstChild().getNodeName().equals("ResultSet"));
         // test for find a information inside the xml document.
         fullUrl = "http://where.yahooapis.com/geocode?q=46.218079,6.142825&gflags=R&appid=dj0yJmk9QkhEQlJQOXlLODhtJmQ9WVdrOVNsTXpXREo1TlRRbWNHbzlNekkyTlRJek16WXkmcz1jb25zdW1lcnNlY3JldCZ4PTJj";
-        System.out.println(YahooMapLibrary.coordonatesToAddress(fullUrl).get(0));
+        System.out.println(YahooMapLibrary.coordinatesToAddress(fullUrl).get(0));
     }
 
 }
