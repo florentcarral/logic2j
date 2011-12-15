@@ -17,8 +17,16 @@
  */
 package org.logic2j.util;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 /**
  * @author CARRAL Florent
@@ -26,7 +34,18 @@ import java.util.Map;
  */
 public class HttpUtils {
 
-    public static String buildHttpRequestFromService(String url, Map<String, String> parameters) {
+    /**
+     * Build the string of an URL with parameters ( like
+     * www.example.com&parameter1=1).
+     * 
+     * @param url
+     *            the base URL (www.example.com).
+     * @param parameters
+     *            a map with the name of parameters for key.
+     * @return the full URL
+     */
+    public static String buildHttpRequestFromService(String url,
+            Map<String, String> parameters) {
         // iterator from the map.
         Iterator<String> iteratorOfParameters = parameters.keySet().iterator();
         boolean firstParameter = true;
@@ -49,4 +68,46 @@ public class HttpUtils {
         return url;
     }
 
+    /**
+     * Return a document {@link org.w3c.dom.Document} object to navigate in the
+     * xml response of an URL of a web service.
+     * 
+     * @param fullUrl
+     *            the URL of the web service with the parameters.
+     * @return the XML response in a document object
+     */
+    public static Document responseToDocument(String fullUrl) {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        Document document = null;
+        try {
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            document = builder.parse(fullUrl);
+
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+        } catch (SAXException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return document;
+    }
+
+    /**
+     * Build from base URL with the parameters the URL of a web service and
+     * return a document {@link org.w3c.dom.Document} object to navigate in the
+     * xml response
+     * 
+     * @param url
+     *            the base URL of the web service
+     * @param parameters
+     *            a map with the name of parameters for key.
+     * @return the XML response in a document object
+     */
+    public static Document responseToDocument(String url,
+            Map<String, String> parameters) {
+        return responseToDocument(buildHttpRequestFromService(url, parameters));
+    }
 }
