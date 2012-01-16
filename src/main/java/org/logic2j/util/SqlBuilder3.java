@@ -220,8 +220,8 @@ public class SqlBuilder3 {
 
   private Object conjunctions() {
     final List<String> fragments = new ArrayList<String>();
-    for (BaseCriterion elem : this.conjunctions) {
-      fragments.add(elem.sql());
+    for (BaseCriterion conj : this.conjunctions) {
+      fragments.add(conj.sql());
     }
     return CollectionUtils.formatSeparated(fragments, " and ");
   }
@@ -948,6 +948,5 @@ public class SqlBuilder3 {
     sb.append(this.parameters);
     return sb.toString();
   }
-
 
 }

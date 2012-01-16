@@ -33,14 +33,16 @@ import org.logic2j.model.exception.InvalidTermException;
 import org.logic2j.model.symbol.Struct;
 import org.logic2j.model.symbol.Term;
 import org.logic2j.model.var.Bindings;
+import org.logic2j.solve.GoalFrame;
 import org.logic2j.solve.GoalSolver;
+import org.logic2j.solve.ioc.SolutionListener;
 import org.logic2j.util.ReportUtils;
 
 /**
- * Prolog's most classic way of providing sequence of clauses to the {@link GoalSolver} inference engine:
+ * Prolog's most classic way of providing {@link Clause}s to the {@link GoalSolver} inference engine:
  * all clauses are parsed and normalized from one or several theories' textual content managed
  * by this class.
- * TODO Is the name "Manager" correct here???
+ * TODO Does the name "Manager" make sense here?
  */
 public class DefaultTheoryManager implements TheoryManager {
   private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DefaultTheoryManager.class);
@@ -106,13 +108,31 @@ public class DefaultTheoryManager implements TheoryManager {
     //    final Iterator<Term> iterator = theParser.iterator();
     //    while (iterator.hasNext()) {
     Term clauseTerm = theParser.nextTerm(true);
+    Term initializeGoal = null;
     while (clauseTerm != null) {
       //      Term clauseTerm = iterator.next();
       // TODO Dubious we should not need to normalize here.
       logger.debug("Adding clause {}", clauseTerm);
       final Clause cl = new Clause(this.prolog, clauseTerm);
+      if ("initialize".equals(cl.getHead().getName())) {
+          initializeGoal = cl.getBody();
+      } else {
+          prolog.getClauseProviderResolver().register(cl.getPredicateKey(), this);
+      }
       content.add(cl);
       clauseTerm = theParser.nextTerm(true);
+    }
+    // Invoke the "initialize" goal
+    if (initializeGoal != null) {
+      final Bindings bindings = new Bindings(initializeGoal);
+      final GoalFrame goalFrame = new GoalFrame();
+      final SolutionListener solutionListener = new SolutionListener() {
+        @Override
+        public boolean onSolution() {
+          return false;
+        }
+      };
+      prolog.getSolver().solveGoal(bindings, goalFrame, solutionListener);
     }
     return content;
   }
@@ -135,12 +155,13 @@ public class DefaultTheoryManager implements TheoryManager {
 
   //TODO => Check if the parameter theGoalBindings may be used because up to now it is declared in that method only because it has to implement it with those parameters (cf ClauseProvider).
   /**
-   * 
+   * @param theGoal
+   * @return All {@link Clause}s from the {@link TheoryContent} that may match theGoal.
    * @param theGoalBindings : is not used in that method, so you can give null as a parameter.
    */
   @Override
-  public Iterable<Clause> listMatchingClauses(Struct theGoalTerm, Bindings theGoalBindings) {
-    return this.wholeContent.find(theGoalTerm);
+  public Iterable<Clause> listMatchingClauses(Struct theGoal, Bindings theGoalBindings) {
+    return this.wholeContent.find(theGoal);
   }
 
   @Override
