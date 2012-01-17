@@ -17,60 +17,58 @@
  */
 package org.logic2j.theory;
 
-import static org.junit.Assert.assertNotNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Iterator;
+
+import static junit.framework.Assert.*;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.logic2j.PrologWithDataSourcesTestBase;
 import org.logic2j.library.impl.rdb.RDBBase;
+import org.logic2j.model.Clause;
 import org.logic2j.model.symbol.Struct;
 
 public class RDBClauseProviderTest extends PrologWithDataSourcesTestBase {
-    private RDBClauseProvider provider;
 
+    private RDBClauseProvider clauseProvider;
+    
     @Override
     @Before
     public void setUp() {
         super.setUp();
-        this.provider = new RDBClauseProvider(getProlog(), zipcodesDataSource());
+        try {
+            getProlog().getTheoryManager().addTheory(getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
+        } catch (IOException exception) {
+            fail("Unable to load \"test-config.pl\" file.");
+        }
+        clauseProvider = (RDBClauseProvider) getProlog().getClauseProviders().get(1);
     }
 
     @Test
-    public void test_getConnection() throws SQLException {
-        assertNotNull(zipcodesConnection());
+    public void testClauseProviderRegistering() throws SQLException {
+        assertEquals(RDBClauseProvider.class, getProlog().getClauseProviders().get(1).getClass());
     }
 
     @Test
-    public void listMatchingClauses() throws IOException {
-        getProlog().getTheoryManager().addTheory(
-                getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
-        //assertNotNull(this.provider);
+    public void listMatchingClauses() {
         final Struct theGoal = new Struct("zipcodesdb_zip_code", "Zip", "Lat");
-        getProlog().getClauseProviders().get(1).listMatchingClauses(theGoal, null);
+        Iterator<Clause> iterator = clauseProvider.listMatchingClauses(theGoal, null).iterator();
+        assertTrue(iterator.hasNext());
     }
 
     @Test
-    public void listMatchingClausesWithSpecialTransformer() throws IOException {
-        //assertNotNull(this.provider);
-        getProlog().getTheoryManager().addTheory(getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
+    public void listMatchingClausesWithSpecialTransformer() {
         final Struct theGoal = new Struct("zipcodesdb_zip_code", "Zip", "Lat");
-        ((RDBClauseProvider) getProlog().getClauseProviders().get(1)).setTermFactory(new RDBBase.AllStringsAsAtoms(getProlog()));
-        getProlog().getClauseProviders().get(1).listMatchingClauses(theGoal, /* No vars in theGoal */null);
+        clauseProvider.setTermFactory(new RDBBase.AllStringsAsAtoms(getProlog()));
+        Iterator<Clause> iterator = clauseProvider.listMatchingClauses(theGoal, /* No vars in theGoal */null).iterator();
+        assertTrue(iterator.hasNext());
     }
 
     @Test
-    public void matchClausesFromProlog() throws IOException {
-        // When loading a theory with an initialize predicate containing a
-        // rdb_config predicate. This one will create new RDBClauseProviders
-        // linked with the appropriate datasource.
-        getProlog().getTheoryManager().addTheory(
-                getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
-
-        // getProlog().getClauseProviders().add(this.provider);
+    public void matchClausesFromProlog() {
         // Matching all
         assertNSolutions(79991, "zipcodesdb_zip_code(_, _)");
         assertNSolutions(79991, "zipcodesdb_zip_code(X, _)");
