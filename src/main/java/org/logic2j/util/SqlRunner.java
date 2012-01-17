@@ -36,11 +36,11 @@ import javax.sql.DataSource;
  * @version $Id$
  */
 public class SqlRunner {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SqlRunner.class);
-  private static final boolean DEBUG_ENABLED = logger.isDebugEnabled();
-  private static final Object[] EMPTY_PARAMS = new Object[0];
-
-  private final DataSource dataSource;
+  protected static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(SqlRunner.class);
+  protected static final boolean DEBUG_ENABLED = logger.isDebugEnabled();
+  protected static final Object[] EMPTY_PARAMS = new Object[0];
+  protected PreparedStatement stmt;
+  protected final DataSource dataSource;
 
   /**
    * @param theDataSource
@@ -55,14 +55,12 @@ public class SqlRunner {
    * @return The result (all data)
    * @throws SQLException 
    */
-  public List<Object[]> query(String theSelect, Object[] theParameters) throws SQLException {
-	  
+  public Iterable<Object[]> query(String theSelect, Object[] theParameters) throws SQLException {
     if (theParameters == null) {
       theParameters = EMPTY_PARAMS;
     }
-    PreparedStatement stmt = null;
     ResultSet rs = null;
-    List<Object[]> result = null;
+    Iterable<Object[]> result = null;
     if (DEBUG_ENABLED) {
       logger.debug("SqlRunner SQL \"" + theSelect + '"');
       logger.debug(" parameters=" + Arrays.asList(theParameters));
@@ -81,7 +79,7 @@ public class SqlRunner {
       }
       this.rethrow(e, theSelect, theParameters);
     } finally {
-      try {
+      /*try {
         if (rs != null) {
           rs.close();
         }
@@ -94,7 +92,7 @@ public class SqlRunner {
         }
       } catch (SQLException ignored) {
         // Quiet
-      }
+      }*/
       // Should we close the connection here??? (return it to the pool in case of a pooled connection?)
     }
     return result;
@@ -109,7 +107,7 @@ public class SqlRunner {
    * @return Full result set in memory :-(
    * @throws SQLException 
    */
-  private List<Object[]> handle(ResultSet theResultSet) throws SQLException {
+  protected Iterable<Object[]> handle(ResultSet theResultSet) throws SQLException {
     List<Object[]> result = new ArrayList<Object[]>();
 
     ResultSetMetaData meta = theResultSet.getMetaData();
