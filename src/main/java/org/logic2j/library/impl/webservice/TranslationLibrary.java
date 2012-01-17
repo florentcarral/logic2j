@@ -1,5 +1,9 @@
 package org.logic2j.library.impl.webservice;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,9 +26,6 @@ public class TranslationLibrary extends LibraryBase {
 
     static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TranslationLibrary.class);
 
-    public final static int COORDINATE_RESULT_SIZE = 2;
-    public final static int COORDINATE_LATITUDE = 0;
-    public final static int COORDINATE_LONGITUDE = 1;
     public final static int MYMEMORY_GET = 0;
     public final static int MYMEMORY_GET_IP = 1;
 
@@ -57,6 +58,7 @@ public class TranslationLibrary extends LibraryBase {
         super(theProlog);
     }
 
+    
 
     /**
      * This primitive enables user to translate a given text (parameter Term <b>text</b>) from a source language (parameter Term <b>sourceLanguage</b>) into another language (Term <b>targetLanguage</b>).
@@ -136,6 +138,16 @@ public class TranslationLibrary extends LibraryBase {
     }
     
     
+    
+    /**
+     * This method builds a Map of indexed by Strings and for which the contained object are string that are the value corresponding to the fields given as indexes.
+     * <br><br>e.g: For an get http request, if the expected parameters are <i>langpair</i> and <i>theText</i> and their corresponding values are <i>"en|it"</i> and <i>"A text to translate"</i>.
+     * <br>Then the Map will be as followed : <ul><li>aMap.put("langpair", "en|it")</li><li>aMap.put("theText", "A text to translate")<li></ul>
+     * @param formatText is the text that will have to be passed as a parameter into the url to be then translated.
+     * @param formatSourceLanguage is the language code (ISO standard names or RFC 3066) corresponding to the language of the original text.
+     * @param formatTargetLanguage is the language code (ISO standard names or RFC 3066) corresponding to the language into which the text will be translated.
+     * @return the corresponding Map which is composed of the parameters and their values where the parameters names are used as indexes of the map.
+     */
     public Map<String, String> constructTranslationParameters(String formatText, String formatSourceLanguage, String formatTargetLanguage){
         Map<String,String> requestParameters = new HashMap<String, String>();
         requestParameters.put(featuresParameters.get(MYMEMORY_GET).get(0), formatText);
@@ -144,6 +156,16 @@ public class TranslationLibrary extends LibraryBase {
     }
     
 
+    /**
+     * This method builds a Map of indexed by Strings and for which the contained object are string that are the value corresponding to the fields given as indexes.
+     * <br><br>e.g: For an get http request, if the expected parameters are <i>langpair</i> and <i>theText</i> and their corresponding values are <i>"en|it"</i> and <i>"A text to translate"</i>.
+     * <br>Then the Map will be as followed : <ul><li>aMap.put("langpair", "en|it")</li><li>aMap.put("theText", "A text to translate")<li></ul>
+     * @param formatText is the text that will have to be passed as a parameter into the url to be then translated.
+     * @param formatSourceLanguage is the language code (ISO standard names or RFC 3066) corresponding to the language of the original text.
+     * @param formatTargetLanguage is the language code (ISO standard names or RFC 3066) corresponding to the language into which the text will be translated.
+     * @param formatIp is the ip that is used into the request.
+     * @return the corresponding Map which is composed of the parameters and their values where the parameters names are used as indexes of the map.
+     */
     public Map<String, String> constructTranslationWithIpParameters(String formatText, String formatSourceLanguage, String formatTargetLanguage, String formatIp){
         Map<String,String> requestParameters = new HashMap<String, String>();
         requestParameters.put(featuresParameters.get(MYMEMORY_GET_IP).get(0), formatText);
@@ -153,90 +175,63 @@ public class TranslationLibrary extends LibraryBase {
     }
     
     
+    /**
+     * This method takes the URL that will be used to call the web service of MyMemory and then does the request and takes the JSON result to extract the expected translated text and return it.
+     * @param fullUrl is the full url that has to be used to formulate the request.
+     * @return a String corresponding to the translated Text extracted from the result of the request.
+     */
     public static String translation(String fullUrl){
-        //TODO the whole function    
-        return null;
-    }
-    
-    
-    /*
-    public static List<String[]> addressToCoordinate(String fullUrl){
-        List<String[]> result = new ArrayList<String[]>();
-        Document doc = HttpUtils.responseToDocument(fullUrl);
-        NodeList resultsFromService = doc.getFirstChild().getChildNodes();
-        // for each funded coordinate.
-        for (int i = 0; i < resultsFromService.getLength(); i++) {
-            if (resultsFromService.item(i).getNodeName().equals("Result")) {
-                NodeList currentResult = resultsFromService.item(i)
-                        .getChildNodes();
-                String latitude = "";
-                String longitude = "";
-                for (int j = 0; j < currentResult.getLength(); j++) {
-                    if (currentResult.item(j).getNodeName().equals("latitude")) {
-                        latitude = currentResult.item(j).getTextContent();
-                    }
-                    if (currentResult.item(j).getNodeName().equals("longitude")) {
-                        longitude = currentResult.item(j).getTextContent();
-                    }
-                }
-                String[] currentResultTable = new String[COORDINATE_RESULT_SIZE];
-                currentResultTable[COORDINATE_LATITUDE] = latitude;
-                currentResultTable[COORDINATE_LONGITUDE] = longitude;
-                result.add(currentResultTable);
-            }
+        String result = null;
+        try{
+            URL url = new URL(fullUrl);
+            URLConnection myMemoryConnection = url.openConnection();
+            BufferedReader in = new BufferedReader(new InputStreamReader(myMemoryConnection.getInputStream()));
+            String inputLine;
+            if (((inputLine = in.readLine())!=null) && inputLine.contains("translatedText"))
+                //TODO : Use a real parser instead of that very ugly hand-made method which isn't event optimized.
+                result = getParsedTranslatedText(inputLine);
+            in.close();
+        }
+        catch(Exception e){
+            logger.error(e.getMessage());
         }
         return result;
     }
     
     
-    public static List<String> coordinatesToAddress(String fullUrl) {
-        List<String> result = new ArrayList<String>();
-        Document doc = HttpUtils.responseToDocument(fullUrl);
-        NodeList resultsFromService = doc.getFirstChild().getChildNodes();
-        // for each funded address.
-        for (int i = 0; i < resultsFromService.getLength(); i++) {
-            if (resultsFromService.item(i).getNodeName().equals("Result")) {
-                NodeList currentResult = resultsFromService.item(i).getChildNodes();
-                // prepare of the string variable of the current address
-                String house = "";
-                String street = "";
-                String postal = "";
-                String city = "";
-                String country = "";
-                for (int j = 0; j < currentResult.getLength(); j++) {
-                        if (currentResult.item(j).getNodeName().equals("house")) {
-                            house = currentResult.item(j).getTextContent();
+    /**
+     * This method gets the String result taken from the MyMemory API request and then extracts a valid String result corresponding to the expected result.
+     * <br><br><i><b>WARNING :</b> This method is made taken into consideration that we know the normal shape of the request result. But it is not good at all in the way that as soon as a single space will be inserted into the result it won't work anymore.</i>
+     * @param resultToParse is the String corresponding to the whole response taken form the request sent to the MyMemory WebService. The format of the response is JSON.
+     * @return the String corresponding to the translation of the text given as the original text. 
+     */
+    public static String getParsedTranslatedText(String resultToParse){
+        String result = null;
+        String currentResult = resultToParse;
+        final String RESPONSEDATA = "\"responseData\":";
+        final String TRANSLATEDTEXT = "\"translatedText\":";
+        if (currentResult.contains(TRANSLATEDTEXT) && currentResult.contains(RESPONSEDATA)){
+            if (currentResult.startsWith("{") && currentResult.endsWith("}")){
+                currentResult = currentResult.substring(1, currentResult.length()-1);
+                if (currentResult.startsWith(RESPONSEDATA)){
+                    currentResult = currentResult.substring(RESPONSEDATA.length());
+                    if (currentResult.startsWith("{")){
+                        int finishingIndex = currentResult.indexOf("}");
+                        if (finishingIndex>1 && finishingIndex<currentResult.length()){
+                            currentResult = currentResult.substring(1, finishingIndex);
+                            if (currentResult.startsWith(TRANSLATEDTEXT)){
+                                currentResult = currentResult.substring(TRANSLATEDTEXT.length());
+                                if (currentResult.startsWith("\"") && currentResult.endsWith("\"")){
+                                    result = currentResult.substring(1, currentResult.length()-1);
+                                    //TODO parse the Unicode result into a correct String
+                                }   
+                            }
                         }
-                        if (currentResult.item(j).getNodeName().equals("street")) {
-                            street = currentResult.item(j).getTextContent();
-                        }
-                        if (currentResult.item(j).getNodeName().equals("postal")) {
-                            postal = currentResult.item(j).getTextContent();
-                        }
-                        if (currentResult.item(j).getNodeName().equals("city")) {
-                            city = currentResult.item(j).getTextContent();
-                        }
-                        if (currentResult.item(j).getNodeName().equals("country")) {
-                            country = currentResult.item(j).getTextContent();
-                        }
-                }
-                String currentAddress = house;
-                //That means that it is a non empty String which doesn't finish with a blank character logically.
-                if (currentAddress.length()>0) currentAddress+=" ";
-                currentAddress += street;
-                if (currentAddress.length()>0) currentAddress+=" ";
-                currentAddress += postal;
-                if (currentAddress.length()>0) currentAddress+=" ";
-                currentAddress += city;
-                if (currentAddress.length()>0) currentAddress+=" ";
-                currentAddress += country;
-                
-                if (currentAddress.length()>0){
-                    result.add(currentAddress);
+                    }
                 }
             }
         }
         return result;
     }
-    */
+    
 }
