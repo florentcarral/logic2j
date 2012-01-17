@@ -11,14 +11,17 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
+import org.bson.types.ObjectId;
 import org.logic2j.ClauseProvider;
 import org.logic2j.PrologImplementor;
 import org.logic2j.TermFactory;
 import org.logic2j.TermFactory.FactoryMode;
+import org.logic2j.io.format.FormatUtils;
 import org.logic2j.io.parse.DefaultTermFactory;
 import org.logic2j.model.Clause;
 import org.logic2j.model.exception.InvalidTermException;
 import org.logic2j.model.symbol.Struct;
+import org.logic2j.model.symbol.TNumber;
 import org.logic2j.model.symbol.Term;
 import org.logic2j.model.symbol.TermApi;
 import org.logic2j.model.symbol.Var;
@@ -34,16 +37,14 @@ import com.mongodb.DBObject;
 
 /**
  * @author Vincent Berthet
- *
+ * 
  */
 public class MongoClauseProvider implements ClauseProvider {
     private PrologImplementor theProlog;
     private DB db;
     private final String prefix;
     private AllStringsAsAtoms termFactory;
-    
-    
-    
+
     /**
      * @return the theProlog
      */
@@ -51,71 +52,72 @@ public class MongoClauseProvider implements ClauseProvider {
         return theProlog;
     }
 
-    public MongoClauseProvider(PrologImplementor theProlog,DB dbSource){
-        this(theProlog,dbSource,"");
+    public MongoClauseProvider(PrologImplementor theProlog, DB dbSource) {
+        this(theProlog, dbSource, "");
     }
-    
-    public MongoClauseProvider(PrologImplementor theProlog,DB dbSource,String prefix) {
+
+    public MongoClauseProvider(PrologImplementor theProlog, DB dbSource, String prefix) {
         super();
         this.theProlog = theProlog;
         this.db = dbSource;
         this.prefix = prefix;
         this.termFactory = new MongoClauseProvider.AllStringsAsAtoms(theProlog);
-      }
-    
-    /* (non-Javadoc)
-     * @see org.logic2j.ClauseProvider#listMatchingClauses(org.logic2j.model.symbol.Struct, org.logic2j.model.var.Bindings)
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.logic2j.ClauseProvider#listMatchingClauses(org.logic2j.model.symbol
+     * .Struct, org.logic2j.model.var.Bindings)
      */
     @Override
-    public Iterable<Clause> listMatchingClauses(Struct theGoal, Bindings theGoalBindings) {        
+    public Iterable<Clause> listMatchingClauses(Struct theGoal, Bindings theGoalBindings) {
         BasicDBObject query = new BasicDBObject();
         BasicDBObject resField = new BasicDBObject();
-        
-        for (int i = 0; i<theGoal.getArity(); i+=2){
-            Term fName = theGoal.getArg(i);
-            Term t = theGoal.getArg(i+1);
-            
-            if (t instanceof Var && theGoalBindings!=null) {
-                t = (new TermApi()).substitute(theGoal.getArg(i), theGoalBindings, null);
-            }
-            if(!fName.isAtom()){
+
+        for (int i = 0; i < theGoal.getArity(); i += 2) {
+            Term field = theGoal.getArg(i);
+            Term value = theGoal.getArg(i + 1);
+
+            if (!field.isAtom()) {
                 throw new RuntimeException("Mongo predicate's syntax is not respected");
             }
-            if(t.isAtom()){
-                query.put(((Struct)fName).getName(), ((Struct)t).getName());
+            resField.put(((Struct) field).getName(), 1);
+            if (value instanceof Var && theGoalBindings != null) {
+                value = (new TermApi()).substitute(value, theGoalBindings, null);
             }
-            else{
-                if(t.isList()){
-                    throw new UnsupportedOperationException("");
-                }
-                else{
-                    resField.put(((Struct)fName).getName(), 1);
-                }
+            if (value.isAtom() || value instanceof TNumber) {
+                query.put(FormatUtils.removeApices(field.toString()), FormatUtils.removeApices(value.toString()));
+            } else if (value.isList()) {
+                throw new UnsupportedOperationException("");
             }
         }
-        
+
         return this.queryForClauses(query, resField, theGoal.getName());
     }
 
-    private Clause clauseBuilder(DBObject row, String predicateName){
+    private Clause clauseBuilder(DBObject row, String predicateName) {
         BasicDBObject rowObj = new BasicDBObject(row.toMap());
-        Term[] args = new Term[rowObj.size()*2];
+        Term[] args = new Term[(rowObj.size() - 1) * 2];
         Iterator<Entry<String, Object>> itRow = rowObj.entrySet().iterator();
         int i = 0;
-        while(itRow.hasNext()){
+        while (itRow.hasNext()) {
             Entry<String, Object> entry = itRow.next();
-            args[i] = this.termFactory.create(entry.getKey(), FactoryMode.ANY_TERM);
-            args[i+1] = this.termFactory.create(entry.getValue(), FactoryMode.ANY_TERM);
-            i*=2;
+            if (!(entry.getValue() instanceof ObjectId)) {
+                args[2*i] = this.termFactory.create(entry.getKey(), FactoryMode.ANY_TERM);
+                args[2*i + 1] = this.termFactory.create(entry.getValue(), FactoryMode.ANY_TERM);
+                i++;
+            }
         }
         final Clause cl = new Clause(getTheProlog(), new Struct(predicateName, args));
         return cl;
     }
-    
-    protected Iterable<Clause> queryForClauses(BasicDBObject query,BasicDBObject selectField, final String predicateName) {
+
+    protected Iterable<Clause> queryForClauses(BasicDBObject query, BasicDBObject selectField,
+            final String predicateName) {
         DBCollection coll = db.getCollection(predicateName.substring(this.prefix.length()));
         Iterable<DBObject> rows = coll.find(query, selectField);
-        System.out.println(coll.count(query));
         return new DynIterable<Clause, DBObject>(new DynIterable.DynBuilder<Clause, DBObject>() {
 
             @Override
@@ -124,27 +126,27 @@ public class MongoClauseProvider implements ClauseProvider {
             }
         }, rows);
     }
-    
+
     /**
-     * A {@link TermFactory} that will parse all strings as atoms 
-     * (especially those starting with uppercase that must not become bindings).
+     * A {@link TermFactory} that will parse all strings as atoms (especially
+     * those starting with uppercase that must not become bindings).
      */
     public static class AllStringsAsAtoms extends DefaultTermFactory {
-      private static final TermApi TERM_API = new TermApi();
+        private static final TermApi TERM_API = new TermApi();
 
-      public AllStringsAsAtoms(PrologImplementor theProlog) {
-        super(theProlog);
-      }
+        public AllStringsAsAtoms(PrologImplementor theProlog) {
+            super(theProlog);
+        }
 
-      @Override
-      public Term parse(CharSequence theExpression) {
-        return new Struct(theExpression.toString());
-      }
+        @Override
+        public Term parse(CharSequence theExpression) {
+            return new Struct(theExpression.toString());
+        }
 
-      @Override
-      public Term create(Object theObject, FactoryMode theMode) {
-        // Ignore theMode argument, and use forcing of atom instead
-        return TERM_API.valueOf(theObject, FactoryMode.ATOM);
-      }
+        @Override
+        public Term create(Object theObject, FactoryMode theMode) {
+            // Ignore theMode argument, and use forcing of atom instead
+            return TERM_API.valueOf(theObject, FactoryMode.ATOM);
+        }
     }
 }

@@ -73,7 +73,11 @@ public class MongoClauseProviderTest extends PrologTestBase {
     @Test
     public void matchClausesFromProlog() throws IOException {
         // Matching all
-        assertNSolutions(79991, "zipcodesdb_zip_code(\"ZIP_CODE\", ZipCode)");
+        assertNSolutions(79991, "zipcodesdb_zip_code('ZIP_CODE', ZipCode)");
+        //
+        assertNSolutions(4, "zipcodesdb_zip_code('ZIP_CODE', '90008')");
+        // 
+        assertNSolutions(4, "zipcodesdb_zip_code('ZIP_CODE', '90008', 'CITY', City)");
         /*
         assertNSolutions(79991, "zipcodesdb_zip_code(X, _)");
         assertNSolutions(79991, "zipcodesdb_zip_code(_, Y)");
