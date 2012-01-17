@@ -30,71 +30,76 @@ import org.logic2j.library.impl.rdb.RDBBase;
 import org.logic2j.model.symbol.Struct;
 
 public class RDBClauseProviderTest extends PrologWithDataSourcesTestBase {
-  private RDBClauseProvider provider;
+    private RDBClauseProvider provider;
 
-  @Override
-  @Before
-  public void setUp() {
-    super.setUp();
-    this.provider = new RDBClauseProvider(getProlog(), zipcodesDataSource());
-  }
+    @Override
+    @Before
+    public void setUp() {
+        super.setUp();
+        this.provider = new RDBClauseProvider(getProlog(), zipcodesDataSource());
+    }
 
-  @Test
-  public void test_getConnection() throws SQLException {
-    assertNotNull(zipcodesConnection());
-  }
+    @Test
+    public void test_getConnection() throws SQLException {
+        assertNotNull(zipcodesConnection());
+    }
 
-  @Test
-  public void listMatchingClauses() throws IOException {
-    getProlog().getTheoryManager().addTheory(getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
-    
-    assertNotNull(this.provider);
-    final Struct theGoal = new Struct("zip_code", "Zip", "City");
-    this.provider.listMatchingClauses(theGoal, null);
-  }
+    @Test
+    public void listMatchingClauses() throws IOException {
+        getProlog().getTheoryManager().addTheory(
+                getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
+        //assertNotNull(this.provider);
+        final Struct theGoal = new Struct("zipcodesdb_zip_code", "Zip", "Lat");
+        getProlog().getClauseProviders().get(1).listMatchingClauses(theGoal, null);
+    }
 
-  @Test
-  public void listMatchingClausesWithSpecialTransformer() {
-    assertNotNull(this.provider);
-    final Struct theGoal = new Struct("zip_code", "Zip", "City");
-    this.provider.setTermFactory(new RDBBase.AllStringsAsAtoms(getProlog()));
-    this.provider.listMatchingClauses(theGoal, /* No vars in theGoal */null);
-  }
+    @Test
+    public void listMatchingClausesWithSpecialTransformer() throws IOException {
+        //assertNotNull(this.provider);
+        getProlog().getTheoryManager().addTheory(getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
+        final Struct theGoal = new Struct("zipcodesdb_zip_code", "Zip", "Lat");
+        ((RDBClauseProvider) getProlog().getClauseProviders().get(1)).setTermFactory(new RDBBase.AllStringsAsAtoms(getProlog()));
+        getProlog().getClauseProviders().get(1).listMatchingClauses(theGoal, /* No vars in theGoal */null);
+    }
 
-  @Test
-  public void matchClausesFromProlog() throws IOException {
-    getProlog().getTheoryManager().addTheory(getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
-    
-    getProlog().getClauseProviders().add(this.provider);
-    // Matching all
-    assertNSolutions(79991, "pred_zip_code(_, _)");
-    assertNSolutions(79991, "pred_zip_code(X, _)");
-    assertNSolutions(79991, "pred_zip_code(_, Y)");
-    assertNSolutions(79991, "pred_zip_code(X, Y)");
-    // Match on first argument
-    assertNSolutions(0, "pred_zip_code('90008', dummy)");
-    assertNSolutions(4, "pred_zip_code('90008', _)");
-    assertNSolutions(4, "pred_zip_code('90008', Y)");
-    assertNSolutions(4, "Z='90008', Y=dummy, pred_zip_code(Z, _)");
-    assertNoSolution("Y=dummy, pred_zip_code('90008', Y)");
-    assertNoSolution("Y=dummy, Z=other, pred_zip_code('90008', Y)");
-    assertNSolutions(4, "Z=dummy, pred_zip_code('90008', Y)");
-    assertNoSolution("pred_zip_code('90008', Y), Y=dummy");
-    // Match on second argument
-    assertNSolutions(102, "pred_zip_code(_, 'LOS ANGELES')");
-    assertNSolutions(102, "pred_zip_code(X, 'LOS ANGELES')");
-    assertNoSolution("X=dummy, pred_zip_code(X, 'LOS ANGELES')");
-    assertNoSolution("pred_zip_code(X, 'LOS ANGELES'), X=dummy");
-    // Match on both arguments
-    assertNSolutions(1, "pred_zip_code('90008', 'LOS ANGELES')");
-    // Match on list testing
-    assertNSolutions(0, "pred_zip_code(['90008',dummy], Y)");
-    assertNoSolution("Y=[dummy,'LOS ANGELES'], pred_zip_code('90008', Y)");
-    // NO matches
-    assertNoSolution("pred_zip_code('00000', 'UNDEFINED')");
-    assertNoSolution("pred_zip_code('90008', 'UNDEFINED')");
-    assertNoSolution("pred_zip_code('00000', 'LOS ANGELES')");
-    assertNoSolution("pred_zip_code(X, X)");
-  }
+    @Test
+    public void matchClausesFromProlog() throws IOException {
+        // When loading a theory with an initialize predicate containing a
+        // rdb_config predicate. This one will create new RDBClauseProviders
+        // linked with the appropriate datasource.
+        getProlog().getTheoryManager().addTheory(
+                getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
+
+        // getProlog().getClauseProviders().add(this.provider);
+        // Matching all
+        assertNSolutions(79991, "zipcodesdb_zip_code(_, _)");
+        assertNSolutions(79991, "zipcodesdb_zip_code(X, _)");
+        assertNSolutions(79991, "zipcodesdb_zip_code(_, Y)");
+        assertNSolutions(79991, "zipcodesdb_zip_code(X, Y)");
+        // Match on first argument
+        assertNSolutions(0, "zipcodesdb_zip_code('90008', 1300.123123)");
+        assertNSolutions(4, "zipcodesdb_zip_code('90008', _)");
+        assertNSolutions(4, "zipcodesdb_zip_code('90008', Y)");
+        assertNSolutions(4, "Z='90008', Y=dummy, zipcodesdb_zip_code(Z, _)");
+        assertNoSolution("Y=1300.123123, zipcodesdb_zip_code('90008', Y)");
+        assertNoSolution("Y=1300.123123, Z=other, zipcodesdb_zip_code('90008', Y)");
+        assertNSolutions(4, "Z=dummy, zipcodesdb_zip_code('90008', Y)");
+        assertNoSolution("zipcodesdb_zip_code('90008', Y), Y=1300.123123");
+        // Match on second argument
+        assertNSolutions(79, "zipcodesdb_zip_code(_, 34.0)");
+        assertNSolutions(79, "zipcodesdb_zip_code(X, 34.0)");
+        assertNoSolution("X=dummy, zipcodesdb_zip_code(X, 34.0)");
+        assertNoSolution("zipcodesdb_zip_code(X, 34.0), X=dummy");
+        // Match on both arguments
+        assertNSolutions(4, "zipcodesdb_zip_code('90008', 34.0)");
+        // Match on list testing
+        assertNSolutions(0, "zipcodesdb_zip_code(['90008',dummy], Y)");
+        assertNoSolution("Y=[1300.123123,34.0], zipcodesdb_zip_code('90008', Y)");
+        // NO matches
+        assertNoSolution("zipcodesdb_zip_code('00000', 0)");
+        assertNoSolution("zipcodesdb_zip_code('90008', 0)");
+        assertNoSolution("zipcodesdb_zip_code('00000', 34.0)");
+        assertNoSolution("zipcodesdb_zip_code(X, X)");
+    }
 
 }

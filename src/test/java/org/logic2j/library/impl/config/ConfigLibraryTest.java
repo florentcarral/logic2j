@@ -20,16 +20,21 @@ package org.logic2j.library.impl.config;
 import java.io.File;
 import java.io.IOException;
 
-import org.logic2j.PrologImpl;
+import junit.framework.Assert;
+
+import org.junit.Test;
 import org.logic2j.PrologWithDataSourcesTestBase;
 
 public class ConfigLibraryTest extends PrologWithDataSourcesTestBase {
 
-  // FIXME: pourquoi un main() dans un test case JUnit?
-    public static void main(String[] args) throws IOException {
-        PrologImpl prolog = new PrologImpl();
-        prolog.getTheoryManager().addTheory(prolog.getTheoryManager().load(new File("src/test/resources/test-config.pl")));
-        System.out.println(prolog.solve("zipcodesdb_ZIP_CODE(\"10001\", Latitude, Longitude)").all().bindings());
+    @Test
+    public void listMatchingClausesWithSpecialTransformer() {
+        try {
+            getProlog().getTheoryManager().addTheory(getProlog().getTheoryManager().load(new File("src/test/resources/test-config.pl")));
+        } catch (IOException exception) {
+            Assert.fail("Unable to load \"test-config.pl\" file.");
+        }
+        Assert.assertEquals(10, getProlog().solve("zipcodesdb_zip_code(\"10001\", Latitude, Longitude)").number());
     }
     
 }

@@ -6,10 +6,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
@@ -89,11 +91,11 @@ public class ConfigLibrary extends LibraryBase {
                 throw new UnsupportedOperationException("setLogWriter");
             }
 
-//            @Override
-//            public Logger getParentLogger()
-//                    throws SQLFeatureNotSupportedException {
-//                throw new UnsupportedOperationException("getParentLogger");
-//            }
+            @Override
+            public Logger getParentLogger()
+                    throws SQLFeatureNotSupportedException {
+                throw new UnsupportedOperationException("getParentLogger");
+            }
 
             @Override
             public int getLoginTimeout() throws SQLException {
@@ -120,6 +122,7 @@ public class ConfigLibrary extends LibraryBase {
         
         RDBClauseProvider clauseProvider = new RDBClauseProvider(getProlog(),
                 dataSource, prefix);
+        getProlog().getClauseProviders().add(clauseProvider);
 
         DatabaseMetaData dmd = dataSource.getConnection(username, password).getMetaData();
         ResultSet tables = dmd.getTables(null, null, "%", null);
@@ -129,16 +132,17 @@ public class ConfigLibrary extends LibraryBase {
             String tableNameLc = tableName.toLowerCase();
             if (!tablesToMap.contains(tableNameLc)) continue;
             ResultSet tableColumns = dmd.getColumns(null, null, tableName, null);
-            List<String> columnDescription = new ArrayList<String>();
-            int j = 0;
+            List<String> originalNames = new ArrayList<String>();
+            // We store the original table name...
+            originalNames.add(tableName);
+            // ...and original columns names.
             while (tableColumns.next()) {
-                columnDescription.add(tableColumns.getString(4));
-                j++;
+                originalNames.add(tableColumns.getString(4));
             }
-            clauseProvider.saveTableInfo(tableName, columnDescription.toArray(new String[] {}));
-            int arity = columnDescription.size();
-            String predicateKey = prefix + tableNameLc + '/' + arity;
-            getProlog().getClauseProviderResolver().register(predicateKey, clauseProvider);
+            clauseProvider.registerTableMetaData(tableNameLc, originalNames.toArray(new String[] {}));
+            // int arity = columnDescription.size();
+            // String predicateKey = prefix + tableNameLc + '/' + arity;
+            getProlog().getClauseProviderResolver().register(prefix + tableNameLc, clauseProvider);
             tableColumns.close();
         }
         tables.close();
