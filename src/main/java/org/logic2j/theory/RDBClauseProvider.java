@@ -48,46 +48,45 @@ import org.logic2j.util.SqlRunnerAdHoc;
  * "PRED_ZIPCODE_CITY(INTEGER ARG_0, VARCHAR ARG_1)".
  */
 public class RDBClauseProvider extends RDBBase implements ClauseProvider {
-    
+
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RDBClauseProvider.class);
 
+    /**
+     * Meta-data of the tables linked to this provider. Note that the first cell
+     * in a table meta-data array is the original name of the table (this is
+     * important because table names are always converted to lower-case to match
+     * prolog syntax, so we have to retreive the real name of the table to query
+     * the database).
+     */
     private final HashMap<String, String[]> tablesMetaData = new HashMap<String, String[]>();
+
+    /**
+     * Prefix of the predicate to query the RDB.
+     */
     private final String prefix;
-    
+
     public RDBClauseProvider(PrologImplementor theProlog, DataSource theDataSource) {
         this(theProlog, theDataSource, "");
     }
-    
+
     public RDBClauseProvider(PrologImplementor theProlog, DataSource theDataSource, String prefix) {
         super(theProlog, theDataSource);
         this.prefix = prefix;
     }
-    
+
+    /**
+     * Register a table meta-data.
+     * 
+     * @param tableIdentifier
+     *            Table identifier (must be in lower-case).
+     * @param originalNames
+     *            Original names of the table and its columns. Note that the
+     *            original table name must be in the fist cell.
+     */
     public void registerTableMetaData(String tableIdentifier, String[] originalNames) {
         tablesMetaData.put(tableIdentifier, originalNames);
     }
-    
-    
-    
-    protected void addConjunctionList(SqlBuilder3 builder, Table table, String tableIdentifier, int columnNumber, ArrayList<Term> structList) {
-        Object[] listValues = new Object[structList.size()];
-        for (int i = 0; i < structList.size(); i++) {
-            Term term = structList.get(i);
-            listValues[i] = term instanceof Struct ? ((Struct) term).getName() : term.toString();
-        }
-        builder.addConjunction(builder.criterion(builder.column(table, tablesMetaData.get(tableIdentifier)[columnNumber]), listValues));
-    }
-    
-    private Clause clauseBuilder(Object[] row, String predicateName) {
-        Term[] args = new Term[row.length];
-        for (int i = 0; i < row.length; i++) {
-            Object object = row[i];
-            args[i] = getTermFactory().create(object, FactoryMode.ANY_TERM);
-        }
-        final Clause cl = new Clause(getProlog(), new Struct(predicateName, args));
-        return cl;
-    }
-    
+
     @Override
     public Iterable<Clause> listMatchingClauses(Struct theGoal, Bindings theGoalBindings) {
         String predicateName = theGoal.getName();
@@ -106,12 +105,15 @@ public class RDBClauseProvider extends RDBBase implements ClauseProvider {
                 t = (new TermApi()).substitute(theGoal.getArg(i), theGoalBindings, null);
             }
             if (t instanceof TNumber) {
-                builder.addConjunction(builder.criterion(builder.column(table, originalNames[i + 1]), SqlBuilder3.OPERATOR_EQ_OR_IN, t.toString()));
+                builder.addConjunction(builder.criterion(builder.column(table, originalNames[i + 1]),
+                        SqlBuilder3.OPERATOR_EQ_OR_IN, t.toString()));
             } else if (t instanceof Struct && (t.isAtom() || t.isList())) {
                 if (t.isAtom()) {
-                    builder.addConjunction(builder.criterion(builder.column(table, originalNames[i + 1]), SqlBuilder3.OPERATOR_EQ_OR_IN, ((Struct) t).getName()));
+                    builder.addConjunction(builder.criterion(builder.column(table, originalNames[i + 1]),
+                            SqlBuilder3.OPERATOR_EQ_OR_IN, ((Struct) t).getName()));
                 } else if (t.isList()) {
-                    addConjunctionList(builder, table, tableIdentifier, i + 1, ((Struct) t).javaListFromPList(new ArrayList<Term>(), Term.class));
+                    addConjunctionList(builder, table, tableIdentifier, i + 1,
+                            ((Struct) t).javaListFromPList(new ArrayList<Term>(), Term.class));
                 }
             }
             // Here we check if there is any bindings (theGoalBindings) that we
@@ -126,16 +128,36 @@ public class RDBClauseProvider extends RDBBase implements ClauseProvider {
         try {
             builder.generateSelect();
             rows = new SqlRunnerAdHoc(getDataSource()).query(builder.getSql(), builder.getParameters());
-            return new DynIterable<Clause, Object[]>(
-                    new DynIterable.DynBuilder<Clause, Object[]>() {
-                        @Override
-                        public Clause build(Object[] input) {
-                            return clauseBuilder(input, predicateName);
-                        }
-                    }, rows);
+            return new DynIterable<Clause, Object[]>(new DynIterable.DynBuilder<Clause, Object[]>() {
+                @Override
+                public Clause build(Object[] input) {
+                    return clauseBuilder(input, predicateName);
+                }
+            }, rows);
         } catch (SQLException e) {
             throw new InvalidTermException("Exception not handled: " + e, e);
         }
+    }
+
+    protected void addConjunctionList(SqlBuilder3 builder, Table table, String tableIdentifier, int columnNumber,
+            ArrayList<Term> structList) {
+        Object[] listValues = new Object[structList.size()];
+        for (int i = 0; i < structList.size(); i++) {
+            Term term = structList.get(i);
+            listValues[i] = term instanceof Struct ? ((Struct) term).getName() : term.toString();
+        }
+        builder.addConjunction(builder.criterion(
+                builder.column(table, tablesMetaData.get(tableIdentifier)[columnNumber]), listValues));
+    }
+
+    private Clause clauseBuilder(Object[] row, String predicateName) {
+        Term[] args = new Term[row.length];
+        for (int i = 0; i < row.length; i++) {
+            Object object = row[i];
+            args[i] = getTermFactory().create(object, FactoryMode.ANY_TERM);
+        }
+        final Clause cl = new Clause(getProlog(), new Struct(predicateName, args));
+        return cl;
     }
 
 }
