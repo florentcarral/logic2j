@@ -91,7 +91,7 @@ public class ConfigLibrary extends LibraryBase {
                 throw new UnsupportedOperationException("setLogWriter");
             }
 
-            @Override
+            // This is a new method in the JDK 7.
             public Logger getParentLogger()
                     throws SQLFeatureNotSupportedException {
                 throw new UnsupportedOperationException("getParentLogger");
