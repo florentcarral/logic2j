@@ -19,7 +19,7 @@ public class DetectLanguageLibraryTest extends PrologTestBase {
         loadLibrary(new IOLibrary(getProlog()));
         loadLibrary(new DetectLanguageLibrary(getProlog()));
         loadLibrary(new TranslationLibrary(getProlog()));
-        assertNSolutions(1, "Text = 'Salut,%20ma%20maison%20est%20bleue%20!', detect_language(Text, Language), translate(Text, Language, 'en', TranslatedText), write(TranslatedText), nl");
+        assertNSolutions(1, "Text = 'Salut, ma maison est bleue !', detect_language(Text, Language), translate(Text, Language, 'en', TranslatedText), write(TranslatedText), nl");
     }
     
 }
