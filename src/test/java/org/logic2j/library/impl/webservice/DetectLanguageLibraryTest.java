@@ -7,7 +7,7 @@ import org.logic2j.library.impl.io.IOLibrary;
 public class DetectLanguageLibraryTest extends PrologTestBase {
 
     @Test
-    public void detectTest() throws Exception {
+    public void detectionTest() throws Exception {
         loadLibrary(new IOLibrary(getProlog()));
         loadLibrary(new DetectLanguageLibrary(getProlog()));
         assertNSolutions(1, "detect_language('Hello world !', Language), write(Language)");
@@ -15,7 +15,7 @@ public class DetectLanguageLibraryTest extends PrologTestBase {
     }
     
     @Test
-    public void detectAndTranslationTest() throws Exception {
+    public void detectionAndTranslationTest() throws Exception {
         loadLibrary(new IOLibrary(getProlog()));
         loadLibrary(new DetectLanguageLibrary(getProlog()));
         loadLibrary(new TranslationLibrary(getProlog()));
