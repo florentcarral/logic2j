@@ -1,14 +1,14 @@
 package org.logic2j.library.impl.webservice;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
 import org.logic2j.PrologImplementor;
 import org.logic2j.io.format.FormatUtils;
 import org.logic2j.library.impl.LibraryBase;
@@ -260,65 +260,18 @@ public class TranslationLibrary extends LibraryBase {
      */
     public static String translation(String fullUrl) {
         String result = null;
+
         try {
-            URL url = new URL(fullUrl);
-            URLConnection myMemoryConnection = url.openConnection();
-            BufferedReader in = new BufferedReader(new InputStreamReader(myMemoryConnection.getInputStream()));
-            String inputLine;
-            if (((inputLine = in.readLine()) != null) && inputLine.contains("translatedText"))
-                // TODO : Use a real parser instead of that very ugly hand-made
-                // method which isn't event optimized.
-                result = getParsedTranslatedText(inputLine);
-            in.close();
+            JsonParser parser = new JsonFactory().createJsonParser(new URL(fullUrl).openConnection().getInputStream());
+            JsonToken token;
+            while ((token = parser.nextToken()) != null) {
+                // The first textual value found in the JSON result corresponds
+                // to our waited result
+                if (token == JsonToken.VALUE_STRING)
+                    return parser.getText();
+            }
         } catch (Exception e) {
             logger.error(e.getMessage());
-        }
-        return result;
-    }
-
-    /**
-     * This method gets the String result taken from the MyMemory API request
-     * and then extracts a valid String result corresponding to the expected
-     * result. <br>
-     * <br>
-     * <i><b>WARNING :</b> This method is made taken into consideration that we
-     * know the normal shape of the request result. But it is not good at all in
-     * the way that as soon as a single space will be inserted into the result
-     * it won't work anymore.</i>
-     * 
-     * @param resultToParse
-     *            is the String corresponding to the whole response taken form
-     *            the request sent to the MyMemory WebService. The format of the
-     *            response is JSON.
-     * @return the String corresponding to the translation of the text given as
-     *         the original text.
-     */
-    public static String getParsedTranslatedText(String resultToParse) {
-        String result = null;
-        String currentResult = resultToParse;
-        final String RESPONSEDATA = "\"responseData\":";
-        final String TRANSLATEDTEXT = "\"translatedText\":";
-        if (currentResult.contains(TRANSLATEDTEXT) && currentResult.contains(RESPONSEDATA)) {
-            if (currentResult.startsWith("{") && currentResult.endsWith("}")) {
-                currentResult = currentResult.substring(1, currentResult.length() - 1);
-                if (currentResult.startsWith(RESPONSEDATA)) {
-                    currentResult = currentResult.substring(RESPONSEDATA.length());
-                    if (currentResult.startsWith("{")) {
-                        int finishingIndex = currentResult.indexOf("}");
-                        if (finishingIndex > 1 && finishingIndex < currentResult.length()) {
-                            currentResult = currentResult.substring(1, finishingIndex);
-                            if (currentResult.startsWith(TRANSLATEDTEXT)) {
-                                currentResult = currentResult.substring(TRANSLATEDTEXT.length());
-                                if (currentResult.startsWith("\"") && currentResult.endsWith("\"")) {
-                                    result = currentResult.substring(1, currentResult.length() - 1);
-                                    // TODO parse the Unicode result into a
-                                    // correct String
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
         return result;
     }

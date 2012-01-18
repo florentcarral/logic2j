@@ -11,9 +11,9 @@ public class TranslationLibraryTest extends PrologTestBase {
         loadLibrary(new IOLibrary(getProlog()));
         loadLibrary(new TranslationLibrary(getProlog()));
         System.out.println("\n1st test : ");
-        assertNSolutions(1, "X='Ciao',translate('Hello world!', 'en', 'it', X)");
+        assertNSolutions(1, "X='Ciao',translate('Hello', 'en', 'it', X)");
         System.out.println("\n2nd test : ");
-        assertNoSolution("X='Ciaos',translate('Hello world!', 'en', 'it', X)");
+        assertNoSolution("X='Ciaos',translate('Hello', 'en', 'it', X)");
         System.out.println("\n3nd test : ");
         assertNSolutions(1, "X='Salut Bob',translate('Hi%20Bob!', 'en', 'fr', X), write(X)");
         System.out.println("\n4th test : ");
