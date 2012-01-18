@@ -24,7 +24,7 @@ public class SqlRunnerAdHoc extends SqlRunner {
 
 	public static int FETCH_SIZE = 1000;
 
-	public SqlRunnerAdHoc(DataSource theDataSource) {
+    public SqlRunnerAdHoc(DataSource theDataSource) {
 		super(theDataSource);
 	}
 

@@ -4,8 +4,10 @@
 package org.logic2j.theory;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -88,13 +90,29 @@ public class MongoClauseProvider implements ClauseProvider {
                 value = (new TermApi()).substitute(value, theGoalBindings, null);
             }
             if (value.isAtom() || value instanceof TNumber) {
-                query.put(FormatUtils.removeApices(field.toString()), FormatUtils.removeApices(value.toString()));
+                query.put(
+                        FormatUtils.removeApices(field.toString()),
+                        (value instanceof TNumber) ? ((TNumber) value).longValue() : FormatUtils.removeApices(value
+                                .toString()));
             } else if (value.isList()) {
+                // query.put(FormatUtils.removeApices(field.toString()),
+                // new BasicDBObject("$in",
+                // this.listStringFromTerm((Struct)value)));
                 throw new UnsupportedOperationException("");
             }
         }
 
         return this.queryForClauses(query, resField, theGoal.getName());
+    }
+
+    private List<String> listStringFromTerm(Struct pList) {
+        ArrayList<String> lst = new ArrayList<String>();
+        Struct t = pList;
+        while (!t.isEmptyList()) {
+            lst.add(FormatUtils.removeApices(t.getLHS().toString()));
+            t = (Struct) t.getRHS();
+        }
+        return lst;
     }
 
     private Clause clauseBuilder(DBObject row, String predicateName) {
@@ -105,8 +123,8 @@ public class MongoClauseProvider implements ClauseProvider {
         while (itRow.hasNext()) {
             Entry<String, Object> entry = itRow.next();
             if (!(entry.getValue() instanceof ObjectId)) {
-                args[2*i] = this.termFactory.create(entry.getKey(), FactoryMode.ANY_TERM);
-                args[2*i + 1] = this.termFactory.create(entry.getValue(), FactoryMode.ANY_TERM);
+                args[2 * i] = this.termFactory.create(entry.getKey(), FactoryMode.ANY_TERM);
+                args[2 * i + 1] = this.termFactory.create(entry.getValue(), FactoryMode.ANY_TERM);
                 i++;
             }
         }
@@ -116,6 +134,7 @@ public class MongoClauseProvider implements ClauseProvider {
 
     protected Iterable<Clause> queryForClauses(BasicDBObject query, BasicDBObject selectField,
             final String predicateName) {
+        System.out.println(query);
         DBCollection coll = db.getCollection(predicateName.substring(this.prefix.length()));
         Iterable<DBObject> rows = coll.find(query, selectField);
         return new DynIterable<Clause, DBObject>(new DynIterable.DynBuilder<Clause, DBObject>() {

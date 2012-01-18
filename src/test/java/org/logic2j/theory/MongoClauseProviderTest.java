@@ -71,42 +71,69 @@ public class MongoClauseProviderTest extends PrologTestBase {
     }
 
     @Test
-    public void matchClausesFromProlog() throws IOException {
+    public void matchClausesFromPrologMatchAll() throws IOException {
         // Matching all
         assertNSolutions(79991, "zipcodesdb_zip_code('ZIP_CODE', ZipCode)");
-        //
-        assertNSolutions(4, "zipcodesdb_zip_code('ZIP_CODE', '90008')");
+        assertNSolutions(79991, "zipcodesdb_zip_code('ZIP_CODE',X,'LAT', _)");
+        assertNSolutions(79991, "zipcodesdb_zip_code('ZIP_CODE',_,'LAT', Y)");
+        assertNSolutions(79991, "zipcodesdb_zip_code('ZIP_CODE',X,'LAT', Y)");
+        
+        
         // 
         assertNSolutions(4, "zipcodesdb_zip_code('ZIP_CODE', '90008', 'CITY', City)");
-        /*
-        assertNSolutions(79991, "zipcodesdb_zip_code(X, _)");
-        assertNSolutions(79991, "zipcodesdb_zip_code(_, Y)");
-        assertNSolutions(79991, "zipcodesdb_zip_code(X, Y)");
-        // Match on first argument
-        assertNSolutions(0, "zipcodesdb_zip_code('90008', 1300.123123)");
-        assertNSolutions(4, "zipcodesdb_zip_code('90008', _)");
-        assertNSolutions(4, "zipcodesdb_zip_code('90008', Y)");
-        assertNSolutions(4, "Z='90008', Y=dummy, zipcodesdb_zip_code(Z, _)");
-        assertNoSolution("Y=1300.123123, zipcodesdb_zip_code('90008', Y)");
-        assertNoSolution("Y=1300.123123, Z=other, zipcodesdb_zip_code('90008', Y)");
-        assertNSolutions(4, "Z=dummy, zipcodesdb_zip_code('90008', Y)");
-        assertNoSolution("zipcodesdb_zip_code('90008', Y), Y=1300.123123");
-        // Match on second argument
-        assertNSolutions(79, "zipcodesdb_zip_code(_, 34.0)");
-        assertNSolutions(79, "zipcodesdb_zip_code(X, 34.0)");
-        assertNoSolution("X=dummy, zipcodesdb_zip_code(X, 34.0)");
-        assertNoSolution("zipcodesdb_zip_code(X, 34.0), X=dummy");
-        // Match on both arguments
-        assertNSolutions(4, "zipcodesdb_zip_code('90008', 34.0)");
-        // Match on list testing
-        assertNSolutions(0, "zipcodesdb_zip_code(['90008',dummy], Y)");
-        assertNoSolution("Y=[1300.123123,34.0], zipcodesdb_zip_code('90008', Y)");
-        // NO matches
-        assertNoSolution("zipcodesdb_zip_code('00000', 0)");
-        assertNoSolution("zipcodesdb_zip_code('90008', 0)");
-        assertNoSolution("zipcodesdb_zip_code('00000', 34.0)");
-        assertNoSolution("zipcodesdb_zip_code(X, X)");
-        //*/
+    }
+    
+    @Test
+    public void matchClausesFromPrologMatchFirstArg(){
+        assertNSolutions(4, "zipcodesdb_zip_code('ZIP_CODE', '90008')");
+        
+        // City = 34.0 : ce n'est pas une erreur c'est volontaire
+        assertNSolutions(0, "zipcodesdb_zip_code('ZIP_CODE', '90008','CITY',34.0)");
+        
+        assertNSolutions(0, "zipcodesdb_zip_code('ZIP_CODE','90008','LAT', 1300.123123)");
+        assertNSolutions(4, "zipcodesdb_zip_code('ZIP_CODE','90008','LAT', _)");
+        assertNSolutions(4, "zipcodesdb_zip_code('ZIP_CODE','90008','LAT', Y)");
+        assertNSolutions(4, "Z='90008', Y=dummy, zipcodesdb_zip_code('ZIP_CODE',Z,'LAT', _)");
+        assertNoSolution("Y=1300.123123, zipcodesdb_zip_code('ZIP_CODE','90008','LAT', Y)");
+        assertNoSolution("Y=1300.123123, Z=other, zipcodesdb_zip_code('ZIP_CODE','90008','LAT', Y)");
+        assertNSolutions(4, "Z=dummy, zipcodesdb_zip_code('ZIP_CODE','90008','LAT', Y)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE','90008','LAT', Y), Y=1300.123123");
+    }
+    
+    @Test
+    public void matchClausesFromPrologMatchSecondArg(){
+        assertNSolutions(0, "zipcodesdb_zip_code('ZIP_CODE',_,'CITY', 34.0)");
+        
+        assertNSolutions(79, "zipcodesdb_zip_code('ZIP_CODE',_,'LAT', 34.0)");
+        assertNSolutions(79, "zipcodesdb_zip_code('ZIP_CODE',X,'LAT', 34.0)");
+        assertNoSolution("X=dummy, zipcodesdb_zip_code('ZIP_CODE',X,'LAT', 34.0)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE',X,'LAT', 34.0), X=dummy");
+    }
+    
+    @Test
+    public void matchClausesFromPrologMatchBothArg(){
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE','00000','LAT', 0)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE','90008','LAT', 0)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE','00000','LAT', 34.0)");
+        assertNSolutions(4,"zipcodesdb_zip_code('ZIP_CODE','90008','LAT', 34.0)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE',X,'LAT', X)");
+    }
+    
+    /**
+     * Match on list testing
+     * It's not supported yet so we expect an exception to be raised
+     */
+    @Test(expected=UnsupportedOperationException.class)
+    public void matchClausesFromPrologWList(){
+        assertNSolutions(0, "zipcodesdb_zip_code('ZIP_CODE',['90008',dummy],'LAT',Y)");
+        assertNSolutions(11, "zipcodesdb_zip_code('ZIP_CODE',['602','501'],'LAT',Y)");
     }
 
+    @Test
+    public void matchClausesFromPrologNoMatch(){
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE','00000','LAT', 0)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE','90008','LAT', 0)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE','00000','LAT', 34.0)");
+        assertNoSolution("zipcodesdb_zip_code('ZIP_CODE',X,'LAT', X)");
+    }
 }
