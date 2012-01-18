@@ -260,15 +260,16 @@ public class TranslationLibrary extends LibraryBase {
      */
     public static String translation(String fullUrl) {
         String result = null;
-
         try {
             JsonParser parser = new JsonFactory().createJsonParser(new URL(fullUrl).openConnection().getInputStream());
             JsonToken token;
             while ((token = parser.nextToken()) != null) {
                 // The first textual value found in the JSON result corresponds
                 // to our waited result
-                if (token == JsonToken.VALUE_STRING)
-                    return parser.getText();
+                if (token == JsonToken.VALUE_STRING) {
+                    result = parser.getText();
+                    return result;
+                }
             }
         } catch (Exception e) {
             logger.error(e.getMessage());

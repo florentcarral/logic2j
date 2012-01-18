@@ -15,10 +15,13 @@ public class TranslationLibraryTest extends PrologTestBase {
         System.out.println("\n2nd test : ");
         assertNoSolution("X='Ciaos',translate('Hello', 'en', 'it', X)");
         System.out.println("\n3nd test : ");
-        assertNSolutions(1, "X='Salut Bob',translate('Hi%20Bob!', 'en', 'fr', X), write(X)");
+        assertNSolutions(1, "X='Salut Bob',translate('Hi Bob!', 'en', 'fr', X), write(X)");
         System.out.println("\n4th test : ");
-        assertNSolutions(
-                1,
-                "X='Je peux vous appeler quand vous voulez.',translate('I%20can%20call%20you%20whenever%20you%20want.', 'es', 'fr', X), write(X)");
+        assertNSolutions(1, "X='Je suis allé à la ville',translate('I went to the city!', 'en', 'fr', X), write(X)");
+        System.out.println("\n4th test : ");
+        assertNSolutions(1, "X='Où vous situez-vous',translate('Where are you located', 'en', 'fr', X), write(X)");
+        System.out.println("\n5th test : ");
+        assertNSolutions(1,
+                "X='Je peux vous appeler quand vous voulez.',translate('I can call you whenever you want.', 'es', 'fr', X), write(X)");
     }
 }

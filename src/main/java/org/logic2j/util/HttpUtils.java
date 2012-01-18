@@ -20,6 +20,7 @@ package org.logic2j.util;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.net.URLEncoder;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -53,15 +54,18 @@ public class HttpUtils {
 
             String currentParameter = iteratorOfParameters.next();
             // if the request has at least one parameter, add of the char '?'.
-            if (firstParameter) {
-                url += "?" + currentParameter + "="
-                        + parameters.get(currentParameter);
-                firstParameter = false;
-            } else {
-                // if it's not the first parameter, add of the char '&'.
-                url += "&" + currentParameter + "="
-                        + parameters.get(currentParameter);
+            try{
+                if (firstParameter) {
+                    url += "?" + URLEncoder.encode(currentParameter, "UTF-8") + "="
+                            + URLEncoder.encode(parameters.get(currentParameter), "UTF-8");
+                    firstParameter = false;
+                } else {
+                    // if it's not the first parameter, add of the char '&'.
+                    url += "&" + URLEncoder.encode(currentParameter, "UTF-8") + "="
+                            + URLEncoder.encode(parameters.get(currentParameter), "UTF-8");
+                }
             }
+            catch(Exception e){}
         }
         return url;
     }
