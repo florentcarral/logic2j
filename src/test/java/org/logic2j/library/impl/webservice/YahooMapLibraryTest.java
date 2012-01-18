@@ -28,16 +28,4 @@ public class YahooMapLibraryTest extends PrologTestBase {
         System.out.println("\n 8th test : ");
         assertNoSolution("yahoomap(ADDRESS, LONGITUDE,'244 chemin de la Cassine,73000 Chambéry', 'MY_API_KEY'), write(LATITUDE), write(LONGITUDE)");
     }
-
-    @Test
-    public void yahoomap_coordinates() throws Exception {
-        loadLibrary(new IOLibrary(getProlog()));
-        loadLibrary(new YahooMapLibrary(getProlog()));
-        System.out.println("\n 1st test : ");
-        assertNSolutions(1,"yahoomap_coordinates(LATITUDE, LONGITUDE, '244+chemin+de+la+Cassine,73000+Chambery', 'MY_API_KEY'), write(LATITUDE), write(LONGITUDE)");
-    }
-    
-    
-    
-    
 }
