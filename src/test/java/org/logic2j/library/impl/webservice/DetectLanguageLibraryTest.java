@@ -13,13 +13,4 @@ public class DetectLanguageLibraryTest extends PrologTestBase {
         assertNSolutions(1, "detect_language('Hello world !', Language), write(Language), nl");
         assertNSolutions(1, "Text = 'Salut, ma maison est bleue !', detect_language(Text, Language), write(Language), nl");
     }
-    
-    @Test
-    public void detectionAndTranslationTest() throws Exception {
-        loadLibrary(new IOLibrary(getProlog()));
-        loadLibrary(new DetectLanguageLibrary(getProlog()));
-        loadLibrary(new TranslationLibrary(getProlog()));
-        assertNSolutions(1, "Text = 'Salut, ma maison est bleue !', detect_language(Text, Language), translate(Text, Language, 'en', TranslatedText), write(TranslatedText), nl");
-    }
-    
 }
