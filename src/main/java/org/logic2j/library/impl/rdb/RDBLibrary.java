@@ -49,10 +49,9 @@ import org.logic2j.util.CollectionMap;
 import org.logic2j.util.CollectionUtils;
 import org.logic2j.util.ReflectUtils;
 import org.logic2j.util.SqlBuilder3;
-import org.logic2j.util.SqlRunner;
 import org.logic2j.util.SqlBuilder3.Column;
 import org.logic2j.util.SqlBuilder3.Table;
-
+import org.logic2j.util.SqlRunner;
 
 /**
  * Prolog library that bridges the Prolog engine and

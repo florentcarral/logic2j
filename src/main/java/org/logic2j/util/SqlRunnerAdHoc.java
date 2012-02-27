@@ -8,12 +8,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import javax.sql.DataSource;
 
-import org.apache.derby.impl.store.raw.log.LogAccessFile;
 import org.logic2j.util.DynIterable.DynBuilder;
 
 /**

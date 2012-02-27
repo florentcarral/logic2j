@@ -6,7 +6,6 @@ package org.logic2j;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 import org.logic2j.model.symbol.Struct;

@@ -1,7 +1,6 @@
 package org.logic2j.theory.webService;
 
 import java.util.List;
-import java.util.Map;
 
 import org.logic2j.ClauseProvider;
 import org.logic2j.model.Clause;
