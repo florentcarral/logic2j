@@ -1,0 +1,22 @@
+Logic2j provide a connector for the NoSQL database MongoDB, to execute related test you have to set-up a
+MongoDB server and import data used by JUnit Test. 
+
+
+1. SetUp a MongoDB server
+	Mac OS X : http://www.mongodb.org/display/DOCS/Quickstart+OS+X
+	Unix/Linux : http://www.mongodb.org/display/DOCS/Quickstart+Unix
+	Windows : http://www.mongodb.org/display/DOCS/Quickstart+Windows
+
+2. Import Data for testing
+	A set of data is provided with Logic2j for testing. 
+		- extract file src/test/mongodb/create/zip_code.gz
+		- import data with mongoimport :
+			Unix : mongoimport -h localhost -d logic2j -c zip_code zip_code.json
+			Windows : mongoimport.exe -h localhost -d logic2j -c zip_code zip_code.json
+
+	You can find more information about import/export at : http://www.mongodb.org/display/DOCS/Import+Export+Tools
+	
+3. You're ready, 
+	if you require more information about mongoDb please have a look to : 
+		http://www.mongodb.org/display/DOCS/Home
+
